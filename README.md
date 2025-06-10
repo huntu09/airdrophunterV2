@@ -2,7 +2,7 @@
 
 **airdrophunter** adalah platform modern berbasis web untuk membantu para pemburu airdrop menemukan, melacak, dan memaksimalkan peluang airdrop di dunia crypto & web3. Dibangun menggunakan Next.js, TypeScript, dan Tailwind CSS — cepat, responsif, dan mudah dikembangkan.
 
-![Open Graph Image](https://your-deployed-site.com/og-image.png)
+![Open Graph Image](https://airdrophunter-v2.vercel.app/og-image.png)
 
 ---
 
