@@ -102,10 +102,16 @@ MIT License © [huntu09](https://github.com/huntu09)
 
 ## 📞 Kontak & Dukungan
 
-- Telegram: [@huntu09](https://t.me/huntu09)
-- Twitter/X: [@huntu09](https://twitter.com/huntu09)
-- Email: your@email.com
+- Telegram: [@huntu09](https://t.me/airdropshunterV27)
+- Twitter/X: [@huntu09](https://x.com/hunter_dr0ps?t=ZYp26v3ourWb2Lavry3OyA&s=09)
+- Email: airdrophunter@gmail.com
 
 ---
+
+## 🧑‍💻 Kontribusi
+
+Saat ini, kontribusi terbuka **hanya untuk pemilik repository**.
+Jika Anda ingin berkontribusi, silakan hubungi saya terlebih dahulu melalui email atau Telegram untuk mendapatkan izin.
+Kontribusi tanpa izin tertulis tidak akan diterima.
 
 > Made with ❤️ by hunters, for hunters.
