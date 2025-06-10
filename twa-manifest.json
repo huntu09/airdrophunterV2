@@ -1,0 +1,67 @@
+{
+  "packageId": "com.airdrophunter.app",
+  "host": "airdrophunter.com",
+  "name": "AirdropHunter",
+  "launcherName": "AirdropHunter",
+  "display": "standalone",
+  "orientation": "default",
+  "themeColor": "#3b82f6",
+  "navigationColor": "#ffffff",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#ffffff",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://airdrophunter.com/icon-512.png",
+  "maskableIconUrl": "https://airdrophunter.com/icon-512.png",
+  "monochromeIconUrl": "https://airdrophunter.com/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Latest Airdrops",
+      "short_name": "Latest",
+      "url": "/",
+      "icon": "https://airdrophunter.com/shortcut-latest.png"
+    },
+    {
+      "name": "Confirmed Airdrops",
+      "short_name": "Confirmed",
+      "url": "/?filter=confirmed",
+      "icon": "https://airdrophunter.com/shortcut-confirmed.png"
+    },
+    {
+      "name": "Safety Guide",
+      "short_name": "Safety",
+      "url": "/safety-guide",
+      "icon": "https://airdrophunter.com/shortcut-safety.png"
+    }
+  ],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "appVersion": "1.0.0",
+  "shellApkVersion": "1.0.0",
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "features": {
+    "locationDelegation": {
+      "enabled": false
+    },
+    "googlePlayBilling": {
+      "enabled": false
+    }
+  },
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://airdrophunter.com/manifest.json",
+  "fallbackType": "customtabs"
+}
