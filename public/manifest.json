@@ -1,0 +1,76 @@
+{
+  "name": "AirdropHunter - #1 Platform for Free Crypto Airdrops & Tokens",
+  "short_name": "AirdropHunter",
+  "description": "Discover the latest cryptocurrency airdrops, DeFi tokens, and NFT drops. Join 500K+ users earning free crypto daily.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Home Screen"
+    },
+    {
+      "src": "/screenshots/screenshot2.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Airdrop Details"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Latest Airdrops",
+      "short_name": "Latest",
+      "url": "/",
+      "icons": [{ "src": "/shortcut-latest.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Confirmed Airdrops",
+      "short_name": "Confirmed",
+      "url": "/?filter=confirmed",
+      "icons": [{ "src": "/shortcut-confirmed.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Safety Guide",
+      "short_name": "Safety",
+      "url": "/safety-guide",
+      "icons": [{ "src": "/shortcut-safety.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.airdrophunter.app",
+      "id": "com.airdrophunter.app"
+    }
+  ],
+  "prefer_related_applications": false,
+  "categories": ["finance", "utilities", "productivity"]
+}

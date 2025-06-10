@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { PWAInstall } from "@/components/pwa-install"
 import { ConsentBanner } from "@/components/ads/consent-banner"
 import { AdBlockerNotice } from "@/components/ads/ad-blocker-notice"
+import { WelcomeTour } from "@/components/welcome-tour" // Add this import
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -405,6 +406,7 @@ window.hideInstallPrompt = hideInstallPrompt;
           <PWAInstall />
           <ConsentBanner />
           <AdBlockerNotice />
+          <WelcomeTour /> {/* Add the WelcomeTour component here */}
         </ThemeProvider>
       </body>
     </html>

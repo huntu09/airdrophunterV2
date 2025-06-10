@@ -4,11 +4,13 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, ExternalLink, Calendar, Users, Award, Globe, Send, Twitter } from "lucide-react"
-import Image from "next/image"
+import { ArrowLeft, ExternalLink, Calendar, Users, Award, Globe, Send, Twitter, LinkIcon } from "lucide-react"
 import Link from "next/link"
 import { Footer } from "@/components/footer"
 import { AirdropAPI, type Airdrop, type AirdropStep } from "@/lib/api"
+
+// Optimized imports
+import { OptimizedImage } from "@/components/optimized-image"
 
 interface LoadingSpinnerProps {
   theme: "dark" | "light"
@@ -33,6 +35,60 @@ function LoadingSpinner({ theme }: LoadingSpinnerProps) {
       </div>
     </div>
   )
+}
+
+// Function to detect URLs and convert them to clickable links with icons
+function formatTextWithLinks(text: string) {
+  if (!text) return text
+
+  // URL regex pattern
+  const urlRegex = /(https?:\/\/[^\s]+)/g
+
+  // Split by URLs
+  const parts = text.split(urlRegex)
+
+  // Find all URLs
+  const urls = text.match(urlRegex) || []
+
+  // Result array to build JSX
+  const result = []
+
+  // Build the result array alternating between text and URL links
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i]) {
+      result.push(<span key={`text-${i}`}>{parts[i]}</span>)
+    }
+
+    if (i < urls.length) {
+      const url = urls[i]
+      let icon = <LinkIcon className="inline-block w-4 h-4 mr-1" />
+
+      // Determine icon based on URL
+      if (url.includes("twitter.com") || url.includes("x.com")) {
+        icon = <Twitter className="inline-block w-4 h-4 mr-1 text-[#1DA1F2]" />
+      } else if (url.includes("t.me") || url.includes("telegram")) {
+        icon = <Send className="inline-block w-4 h-4 mr-1 text-[#0088cc]" />
+      } else if (url.includes("facebook.com") || url.includes("fb.com")) {
+        icon = <div className="inline-block w-4 h-4 mr-1 text-[#1877F2] font-bold">f</div>
+      }
+
+      result.push(
+        <a
+          key={`link-${i}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center text-blue-500 hover:text-blue-700 hover:underline transition-colors"
+        >
+          {icon}
+          {url.length > 30 ? `${url.substring(0, 30)}...` : url}
+          <ExternalLink className="inline-block w-3 h-3 ml-1" />
+        </a>,
+      )
+    }
+  }
+
+  return result.length ? result : text
 }
 
 export default function AirdropDetailPage({ params }: { params: { slug: string } }) {
@@ -112,15 +168,15 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
         {/* Project Header */}
         <div className="flex flex-col items-center mb-12">
           <div className="relative mb-6">
-            <div className="rounded-2xl overflow-hidden shadow-lg" style={{ width: "140px", height: "140px" }}>
-              <Image
-                src={airdrop.logo_url || "/placeholder.svg"}
-                alt={airdrop.name}
-                width={140}
-                height={140}
-                className="object-cover hover:scale-105 transition-transform duration-300"
-              />
-            </div>
+            <OptimizedImage
+              src={airdrop.logo_url || "/placeholder.svg"}
+              alt={airdrop.name}
+              width={140}
+              height={140}
+              className="rounded-2xl shadow-lg"
+              priority={true}
+              type="banner"
+            />
 
             <div className="absolute -top-2 -right-2">
               <Badge
@@ -246,7 +302,7 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
                         {!step.is_required && <span className="text-gray-500 ml-2">(Optional)</span>}
                       </h4>
                       <p className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>
-                        {step.description}
+                        {formatTextWithLinks(step.description)}
                       </p>
                     </div>
                   </div>
@@ -266,7 +322,7 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {otherAirdrops.map((otherAirdrop) => (
+                {otherAirdrops.map((otherAirdrop, index) => (
                   <Link key={otherAirdrop.id} href={`/airdrop/${otherAirdrop.slug}`}>
                     <div
                       className={`p-4 rounded-lg border transition-all duration-200 hover:shadow-md hover:scale-[1.02] cursor-pointer ${
@@ -277,12 +333,14 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <Image
+                          <OptimizedImage
                             src={otherAirdrop.logo_url || "/placeholder.svg"}
                             alt={otherAirdrop.name}
                             width={40}
                             height={40}
-                            className="rounded-full hover:scale-110 transition-transform duration-200"
+                            className="rounded-full"
+                            index={index}
+                            type="thumbnail"
                           />
                           <div>
                             <h4 className="font-semibold text-sm md:text-base text-gray-900 dark:text-gray-100">

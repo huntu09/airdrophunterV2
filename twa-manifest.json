@@ -59,9 +59,32 @@
     },
     "googlePlayBilling": {
       "enabled": false
-    }
+    },
+    "playBilling": {
+      "enabled": false
+    },
+    "webShare": {
+      "enabled": true
+    },
+    "webShareTargetAndroid": {
+      "enabled": true
+    },
+    "additionalOrigins": []
   },
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://airdrophunter.com/manifest.json",
-  "fallbackType": "customtabs"
+  "fallbackType": "customtabs",
+  "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
+  "chromeosEnabled": false,
+  "enableAdMob": true,
+  "adMobConfiguration": {
+    "appId": {
+      "android": "${NEXT_PUBLIC_ADMOB_APP_ID}"
+    },
+    "adUnitIds": {
+      "banner": "${NEXT_PUBLIC_ADMOB_BANNER_ID}",
+      "interstitial": "${NEXT_PUBLIC_ADMOB_INTERSTITIAL_ID}",
+      "rewarded": "${NEXT_PUBLIC_ADMOB_REWARDED_ID}"
+    }
+  }
 }

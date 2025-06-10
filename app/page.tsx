@@ -7,14 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Flame, Wrench, Search, Home, BarChart3, Shield, HelpCircle, Mail, User } from "lucide-react"
-import Image from "next/image"
 import "./globals.css"
 import { Footer } from "@/components/footer"
 import Link from "next/link"
-import { ExchangeCarousel } from "@/components/exchange-carousel"
-import { HybridAdDisplay } from "@/components/ads/hybrid-ad-display"
 import { PWAInstallButton } from "@/components/pwa-install"
 import { Input } from "@/components/ui/input"
+
+// Optimized imports with lazy loading
+import { OptimizedImage } from "@/components/optimized-image"
+import { LazyWelcomeTour, LazyExchangeCarousel, LazyHybridAdDisplay, LazyWrapper } from "@/components/lazy-components"
 
 // Import only types to avoid build-time import
 import type { Airdrop } from "@/lib/api"
@@ -272,6 +273,11 @@ export default function AirdropsHunter() {
         theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"
       } relative overflow-hidden`}
     >
+      {/* Welcome Tour - Lazy loaded */}
+      <LazyWrapper>
+        <LazyWelcomeTour />
+      </LazyWrapper>
+
       {/* Navigation Header */}
       <AnimatedCard delay={100}>
         <header
@@ -362,17 +368,16 @@ export default function AirdropsHunter() {
         )}
       </div>
 
-      {/* Header Ad */}
+      {/* Header Ad - Lazy loaded */}
       <AnimatedCard delay={300}>
         <div className="px-4 mb-6">
-          <HybridAdDisplay position="header" size="leaderboard" fallback={<ExchangeCarousel theme={theme} />} />
-        </div>
-      </AnimatedCard>
-
-      {/* Exchange Affiliate Carousel */}
-      <AnimatedCard delay={400}>
-        <div className="px-4 mb-8">
-          <ExchangeCarousel theme={theme} />
+          <LazyWrapper fallback={<div className="h-24 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />}>
+            <LazyHybridAdDisplay
+              position="header"
+              size="leaderboard"
+              fallback={<LazyExchangeCarousel theme={theme} />}
+            />
+          </LazyWrapper>
         </div>
       </AnimatedCard>
 
@@ -456,12 +461,14 @@ export default function AirdropsHunter() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div className="relative w-[60px] h-[60px] rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
-                              <Image
+                              <OptimizedImage
                                 src={airdrop.logo_url || "/placeholder.svg"}
                                 alt={`${airdrop.name} logo`}
                                 width={60}
                                 height={60}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                className="w-full h-full rounded-full"
+                                index={index}
+                                type="logo"
                               />
                             </div>
                             <div>
@@ -501,24 +508,28 @@ export default function AirdropsHunter() {
                     </Card>
                   </Link>
                 </AnimatedCard>
-                {/* Content Ad - after every 6th airdrop */}
+                {/* Content Ad - after every 6th airdrop - Lazy loaded */}
                 {(index + 1) % 6 === 0 && index < displayedAirdrops.length - 1 && (
                   <AnimatedCard key={`ad-after-${airdrop.id}`} delay={900 + index * 100}>
                     <div className="px-4 mb-4">
-                      <HybridAdDisplay
-                        position="content"
-                        size="rectangle"
-                        fallback={
-                          <Card className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/20">
-                            <CardContent className="p-6 text-center">
-                              <h3 className="text-lg font-semibold mb-2">🚀 Sponsored Content</h3>
-                              <p className="text-gray-600 dark:text-gray-300">
-                                Discover premium crypto tools and services
-                              </p>
-                            </CardContent>
-                          </Card>
-                        }
-                      />
+                      <LazyWrapper
+                        fallback={<div className="h-32 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />}
+                      >
+                        <LazyHybridAdDisplay
+                          position="content"
+                          size="rectangle"
+                          fallback={
+                            <Card className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/20">
+                              <CardContent className="p-6 text-center">
+                                <h3 className="text-lg font-semibold mb-2">🚀 Sponsored Content</h3>
+                                <p className="text-gray-600 dark:text-gray-300">
+                                  Discover premium crypto tools and services
+                                </p>
+                              </CardContent>
+                            </Card>
+                          }
+                        />
+                      </LazyWrapper>
                     </div>
                   </AnimatedCard>
                 )}
