@@ -61,7 +61,7 @@ export function Footer({ theme }: FooterProps) {
               <Button
                 size="sm"
                 className="p-2 bg-[#0088cc] hover:bg-[#006ba6] text-white border-0 transition-all duration-200 hover:scale-110"
-                onClick={() => window.open("https://t.me/airdrophunter", "_blank")}
+                onClick={() => window.open("https://t.me/airdropshunterV27", "_blank")}
               >
                 <Send className="w-4 h-4" />
               </Button>
@@ -70,7 +70,7 @@ export function Footer({ theme }: FooterProps) {
               <Button
                 size="sm"
                 className="p-2 bg-[#1DA1F2] hover:bg-[#1a91da] text-white border-0 transition-all duration-200 hover:scale-110"
-                onClick={() => window.open("https://twitter.com/airdrophunter", "_blank")}
+                onClick={() => window.open("https://x.com/hunter_dr0ps?t=bVoyMskEm6DmDePHeoGp8w&s=09", "_blank")}
               >
                 <Twitter className="w-4 h-4" />
               </Button>
@@ -79,7 +79,7 @@ export function Footer({ theme }: FooterProps) {
               <Button
                 size="sm"
                 className="p-2 bg-[#1877F2] hover:bg-[#166fe5] text-white border-0 transition-all duration-200 hover:scale-110"
-                onClick={() => window.open("https://facebook.com/airdrophunter", "_blank")}
+                onClick={() => window.open("https://www.facebook.com/share/1BvVfC4DDp/", "_blank")}
               >
                 <Facebook className="w-4 h-4" />
               </Button>
