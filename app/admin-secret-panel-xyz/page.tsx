@@ -423,6 +423,26 @@ export default function AdminPanel() {
     }
   }
 
+  const handleDeleteNotification = async (id: string) => {
+    if (confirm("Are you sure you want to delete this notification?")) {
+      try {
+        const response = await fetch(`/api/notifications/${id}`, {
+          method: "DELETE",
+        })
+
+        if (response.ok) {
+          alert("✅ Notification deleted successfully!")
+          fetchNotifications() // Refresh the list
+        } else {
+          alert("❌ Failed to delete notification")
+        }
+      } catch (error) {
+        console.error("Error deleting notification:", error)
+        alert("❌ Error deleting notification")
+      }
+    }
+  }
+
   const getNotificationTypeColor = (type) => {
     switch (type) {
       case "NEW":
@@ -1425,6 +1445,14 @@ export default function AdminPanel() {
                                     {notification.is_read ? "Read" : "Unread"}
                                   </Badge>
                                 </div>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="h-8 px-2"
+                                  onClick={() => handleDeleteNotification(notification.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                               </div>
                             </div>
                           </div>

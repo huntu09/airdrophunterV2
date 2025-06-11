@@ -20,9 +20,9 @@ const exchanges: Exchange[] = [
   {
     id: "binance",
     name: "Binance",
-    logo: "/placeholder.svg?height=60&width=60&text=BN",
+    logo: "https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=030",
     description: "World's largest crypto exchange with lowest fees",
-    affiliateLink: "https://accounts.binance.com/register?ref=YOUR_REF_CODE",
+    affiliateLink: "https://www.bybitglobal.com/invite?ref=PQVOOA",
     bonus: "Up to 20% Commission Rebate",
     color: "from-yellow-600 via-yellow-700 to-yellow-800",
   },
@@ -38,7 +38,7 @@ const exchanges: Exchange[] = [
   {
     id: "okx",
     name: "OKX",
-    logo: "/placeholder.svg?height=60&width=60&text=OKX",
+    logo: "https://cryptologos.cc/logos/okb-okb-logo.png?v=030",
     description: "Leading crypto exchange and Web3 ecosystem",
     affiliateLink: "https://www.okx.com/join/YOUR_REF_CODE",
     bonus: "Up to $10,000 Welcome Bonus",
