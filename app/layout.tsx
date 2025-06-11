@@ -1,12 +1,12 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { PWAInstall } from "@/components/pwa-install"
 import { ConsentBanner } from "@/components/ads/consent-banner"
 import { AdBlockerNotice } from "@/components/ads/ad-blocker-notice"
-import { WelcomeTour } from "@/components/welcome-tour" // Add this import
+import { WelcomeTour } from "@/components/welcome-tour"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -60,17 +60,6 @@ export const metadata: Metadata = {
   category: "Finance",
   classification: "Cryptocurrency Platform",
   referrer: "origin-when-cross-origin",
-  colorScheme: "dark light",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#3b82f6" },
-    { media: "(prefers-color-scheme: dark)", color: "#1e40af" },
-  ],
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
   formatDetection: {
     email: false,
     address: false,
@@ -149,6 +138,18 @@ export const metadata: Metadata = {
     "application-name": "AirdropHunter",
   },
   generator: "v0.dev",
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  colorScheme: "dark light",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#3b82f6" },
+    { media: "(prefers-color-scheme: dark)", color: "#1e40af" },
+  ],
 }
 
 export default function RootLayout({
@@ -406,7 +407,7 @@ window.hideInstallPrompt = hideInstallPrompt;
           <PWAInstall />
           <ConsentBanner />
           <AdBlockerNotice />
-          <WelcomeTour /> {/* Add the WelcomeTour component here */}
+          <WelcomeTour />
         </ThemeProvider>
       </body>
     </html>

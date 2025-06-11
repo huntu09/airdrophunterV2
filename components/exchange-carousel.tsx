@@ -29,7 +29,7 @@ const exchanges: Exchange[] = [
   {
     id: "bybit",
     name: "Bybit",
-    logo: "/bybit.svg,
+    logo: "/bybit.svg",
     description: "Advanced trading platform for derivatives",
     affiliateLink: "https://www.bybit.com/register?affiliate_id=YOUR_REF_CODE",
     bonus: "Up to $30,000 Bonus",
