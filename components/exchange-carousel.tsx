@@ -20,7 +20,7 @@ const exchanges: Exchange[] = [
   {
     id: "binance",
     name: "Binance",
-    logo: "https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=030",
+    logo: "/binance.svg",
     description: "World's largest crypto exchange with lowest fees",
     affiliateLink: "https://www.bybitglobal.com/invite?ref=PQVOOA",
     bonus: "Up to 20% Commission Rebate",
@@ -29,7 +29,7 @@ const exchanges: Exchange[] = [
   {
     id: "bybit",
     name: "Bybit",
-    logo: "/placeholder.svg?height=60&width=60&text=BY",
+    logo: "/bybit.svg,
     description: "Advanced trading platform for derivatives",
     affiliateLink: "https://www.bybit.com/register?affiliate_id=YOUR_REF_CODE",
     bonus: "Up to $30,000 Bonus",
@@ -38,7 +38,7 @@ const exchanges: Exchange[] = [
   {
     id: "okx",
     name: "OKX",
-    logo: "https://cryptologos.cc/logos/okb-okb-logo.png?v=030",
+    logo: "/okex.svg",
     description: "Leading crypto exchange and Web3 ecosystem",
     affiliateLink: "https://www.okx.com/join/YOUR_REF_CODE",
     bonus: "Up to $10,000 Welcome Bonus",
