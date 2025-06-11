@@ -35,9 +35,12 @@ import {
   ImageIcon,
   Move,
   BarChart3,
+  Bot,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import TelegramSettings from "@/components/telegram-settings"
+import type { TelegramSettings as TelegramSettingsType } from "@/lib/telegram-bot"
 
 interface StepFormData {
   id?: string
@@ -72,6 +75,7 @@ export default function AdminPanel() {
     category: "DeFi",
     blockchain: "Ethereum",
   })
+  const [telegramSettings, setTelegramSettings] = useState<TelegramSettingsType | null>(null)
 
   useEffect(() => {
     fetchAirdrops()
@@ -156,6 +160,41 @@ export default function AdminPanel() {
     setSteps(newSteps)
   }
 
+  const autoPostToTelegram = async (airdrop: Airdrop) => {
+    if (!telegramSettings || !telegramSettings.autoPost) return
+
+    // Check if should post based on settings
+    if (telegramSettings.postOnlyConfirmed && airdrop.status !== "CONFIRMED") {
+      console.log("Skipping Telegram post - not confirmed status")
+      return
+    }
+
+    try {
+      console.log("🚀 Auto-posting to Telegram...", airdrop.name)
+
+      const response = await fetch("/api/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "post_airdrop",
+          botToken: telegramSettings.botToken,
+          channelId: telegramSettings.channelId,
+          airdrop: airdrop,
+          websiteUrl: window.location.origin,
+        }),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        console.log("✅ Successfully posted to Telegram!")
+      } else {
+        console.error("❌ Failed to post to Telegram:", result.error)
+      }
+    } catch (error) {
+      console.error("❌ Telegram auto-post error:", error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -179,12 +218,16 @@ export default function AdminPanel() {
       if (editingId) {
         const updatedAirdrop = await AirdropAPI.updateAirdrop(editingId, airdropData)
         airdropId = updatedAirdrop.id
-
-        // Delete existing steps before adding new ones
+        // Auto-post to Telegram for updates only if it's a status change to CONFIRMED
+        if (formData.status === "CONFIRMED") {
+          await autoPostToTelegram(updatedAirdrop)
+        }
         await AirdropAPI.deleteStepsForAirdrop(airdropId)
       } else {
         const newAirdrop = await AirdropAPI.createAirdrop(airdropData)
         airdropId = newAirdrop.id
+        // Auto-post to Telegram for new airdrops
+        await autoPostToTelegram(newAirdrop)
       }
 
       // Save steps (only non-empty ones)
@@ -380,6 +423,10 @@ export default function AdminPanel() {
               <TabsTrigger value="settings" className="data-[state=active]:bg-gray-700">
                 <Settings className="w-4 h-4 mr-2" />
                 <span className="hidden md:inline">Settings</span>
+              </TabsTrigger>
+              <TabsTrigger value="telegram" className="data-[state=active]:bg-gray-700">
+                <Bot className="w-4 h-4 mr-2" />
+                <span className="hidden md:inline">Telegram</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1043,6 +1090,9 @@ export default function AdminPanel() {
                   <p className="text-gray-300">Settings will be available soon.</p>
                 </CardContent>
               </Card>
+            </TabsContent>
+            <TabsContent value="telegram" className="mt-0">
+              <TelegramSettings onSettingsChange={setTelegramSettings} />
             </TabsContent>
           </Tabs>
         </div>
