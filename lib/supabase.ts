@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { debugSupabaseConnection, checkSupabaseTables } from "./debug-supabase"
 
 // Types
@@ -32,6 +32,13 @@ export interface AirdropStep {
   description: string
   is_required: boolean
   created_at: string
+}
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export function createClient() {
+  return createSupabaseClient(supabaseUrl, supabaseAnonKey)
 }
 
 // Enhanced environment validation
@@ -92,7 +99,7 @@ export function getSupabase() {
   }
 
   try {
-    const client = createClient(validation.supabaseUrl!, validation.supabaseAnonKey!)
+    const client = createClient()
     console.log("✅ Supabase client created successfully")
     return client
   } catch (err) {

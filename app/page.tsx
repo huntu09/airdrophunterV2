@@ -12,6 +12,7 @@ import { Footer } from "@/components/footer"
 import Link from "next/link"
 import { PWAInstallButton } from "@/components/pwa-install"
 import { Input } from "@/components/ui/input"
+import { NotificationBell } from "@/components/notification-bell"
 
 // Optimized imports with lazy loading
 import { OptimizedImage } from "@/components/optimized-image"
@@ -313,6 +314,7 @@ export default function AirdropsHunter() {
 
               {/* Right Side Actions */}
               <div className="flex items-center gap-3">
+                <NotificationBell />
                 <PWAInstallButton />
               </div>
             </div>

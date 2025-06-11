@@ -4,10 +4,11 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, ExternalLink, Calendar, Users, Award, Globe, Send, Twitter, LinkIcon } from "lucide-react"
+import { ExternalLink, Calendar, Users, Award, Globe, Send, Twitter, LinkIcon } from "lucide-react"
 import Link from "next/link"
 import { Footer } from "@/components/footer"
 import { AirdropAPI, type Airdrop, type AirdropStep } from "@/lib/api"
+import { CommentsSection } from "@/components/comments-section"
 
 // Optimized imports
 import { OptimizedImage } from "@/components/optimized-image"
@@ -37,58 +38,51 @@ function LoadingSpinner({ theme }: LoadingSpinnerProps) {
   )
 }
 
-// Function to detect URLs and convert them to clickable links with icons
+// Simple and reliable URL formatting function
 function formatTextWithLinks(text: string) {
   if (!text) return text
 
   // URL regex pattern
   const urlRegex = /(https?:\/\/[^\s]+)/g
 
-  // Split by URLs
-  const parts = text.split(urlRegex)
+  // Check if there are any URLs
+  if (!urlRegex.test(text)) {
+    return text
+  }
 
-  // Find all URLs
-  const urls = text.match(urlRegex) || []
-
-  // Result array to build JSX
-  const result = []
-
-  // Build the result array alternating between text and URL links
-  for (let i = 0; i < parts.length; i++) {
-    if (parts[i]) {
-      result.push(<span key={`text-${i}`}>{parts[i]}</span>)
-    }
-
-    if (i < urls.length) {
-      const url = urls[i]
+  // Split by URLs and map to JSX
+  return text.split(urlRegex).map((part, index) => {
+    if (urlRegex.test(part)) {
+      // This is a URL
       let icon = <LinkIcon className="inline-block w-4 h-4 mr-1" />
 
       // Determine icon based on URL
-      if (url.includes("twitter.com") || url.includes("x.com")) {
+      if (part.includes("twitter.com") || part.includes("x.com")) {
         icon = <Twitter className="inline-block w-4 h-4 mr-1 text-[#1DA1F2]" />
-      } else if (url.includes("t.me") || url.includes("telegram")) {
+      } else if (part.includes("t.me") || part.includes("telegram")) {
         icon = <Send className="inline-block w-4 h-4 mr-1 text-[#0088cc]" />
-      } else if (url.includes("facebook.com") || url.includes("fb.com")) {
+      } else if (part.includes("facebook.com") || part.includes("fb.com")) {
         icon = <div className="inline-block w-4 h-4 mr-1 text-[#1877F2] font-bold">f</div>
       }
 
-      result.push(
+      return (
         <a
-          key={`link-${i}`}
-          href={url}
+          key={index}
+          href={part}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center text-blue-500 hover:text-blue-700 hover:underline transition-colors"
         >
           {icon}
-          {url.length > 30 ? `${url.substring(0, 30)}...` : url}
+          {part.length > 30 ? `${part.substring(0, 30)}...` : part}
           <ExternalLink className="inline-block w-3 h-3 ml-1" />
-        </a>,
+        </a>
       )
+    } else {
+      // This is regular text
+      return <span key={index}>{part}</span>
     }
-  }
-
-  return result.length ? result : text
+  })
 }
 
 export default function AirdropDetailPage({ params }: { params: { slug: string } }) {
@@ -153,12 +147,19 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
           <Link href="/">
             <Button
               variant="ghost"
-              className={`${
+              className={`group ${
                 theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"
-              } transition-colors duration-200`}
+              } transition-all duration-300 hover:scale-105`}
             >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              Back to Airdrops
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-orange-500/20 rounded-full blur-sm group-hover:blur-md transition-all duration-300"></div>
+                  <div className="relative bg-gradient-to-br from-orange-400 to-red-500 p-1.5 rounded-full group-hover:scale-110 transition-all duration-300 shadow-lg group-hover:shadow-orange-500/25">
+                    🏠
+                  </div>
+                </div>
+                <span className="font-medium">Back to Airdrops</span>
+              </div>
             </Button>
           </Link>
         </div>
@@ -301,9 +302,9 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
                         {step.title}
                         {!step.is_required && <span className="text-gray-500 ml-2">(Optional)</span>}
                       </h4>
-                      <p className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>
+                      <div className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>
                         {formatTextWithLinks(step.description)}
-                      </p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -369,6 +370,9 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
             </CardContent>
           </Card>
         )}
+
+        {/* Comments Section */}
+        <CommentsSection airdropId={airdrop.id} theme={theme} />
       </div>
 
       {/* Footer */}

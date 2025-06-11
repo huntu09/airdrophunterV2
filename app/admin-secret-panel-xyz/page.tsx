@@ -36,11 +36,13 @@ import {
   Move,
   BarChart3,
   Bot,
+  Bell,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import TelegramSettings from "@/components/telegram-settings"
 import type { TelegramSettings as TelegramSettingsType } from "@/lib/telegram-bot"
+import { Loader2, Send, RefreshCw } from "lucide-react"
 
 interface StepFormData {
   id?: string
@@ -76,6 +78,18 @@ export default function AdminPanel() {
     blockchain: "Ethereum",
   })
   const [telegramSettings, setTelegramSettings] = useState<TelegramSettingsType | null>(null)
+
+  const [notifications, setNotifications] = useState([])
+  const [loadingNotifications, setLoadingNotifications] = useState(false)
+  const [showNotificationForm, setShowNotificationForm] = useState(false)
+  const [notificationForm, setNotificationForm] = useState({
+    type: "ANNOUNCEMENT",
+    title: "",
+    message: "",
+    airdrop_id: "",
+    target: "ALL",
+    schedule: "NOW",
+  })
 
   useEffect(() => {
     fetchAirdrops()
@@ -357,6 +371,80 @@ export default function AdminPanel() {
     }
   }
 
+  const fetchNotifications = async () => {
+    setLoadingNotifications(true)
+    try {
+      const response = await fetch("/api/notifications?limit=20")
+      const data = await response.json()
+      setNotifications(data.notifications || [])
+    } catch (error) {
+      console.error("Error fetching notifications:", error)
+    } finally {
+      setLoadingNotifications(false)
+    }
+  }
+
+  const handleSendNotification = async (e) => {
+    e.preventDefault()
+    setLoadingNotifications(true)
+
+    try {
+      const response = await fetch("/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: notificationForm.type,
+          title: notificationForm.title,
+          message: notificationForm.message,
+          airdrop_id: notificationForm.airdrop_id || null,
+        }),
+      })
+
+      if (response.ok) {
+        alert("✅ Notification sent successfully!")
+        setNotificationForm({
+          type: "ANNOUNCEMENT",
+          title: "",
+          message: "",
+          airdrop_id: "",
+          target: "ALL",
+          schedule: "NOW",
+        })
+        setShowNotificationForm(false)
+        fetchNotifications()
+      } else {
+        alert("❌ Failed to send notification")
+      }
+    } catch (error) {
+      console.error("Error sending notification:", error)
+      alert("❌ Error sending notification")
+    } finally {
+      setLoadingNotifications(false)
+    }
+  }
+
+  const getNotificationTypeColor = (type) => {
+    switch (type) {
+      case "NEW":
+        return "bg-green-600"
+      case "DEADLINE":
+        return "bg-red-600"
+      case "HOT":
+        return "bg-orange-600"
+      case "CLAIM":
+        return "bg-purple-600"
+      case "UPDATE":
+        return "bg-blue-600"
+      default:
+        return "bg-gray-600"
+    }
+  }
+
+  // Load notifications on component mount
+  useEffect(() => {
+    fetchNotifications()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Admin Header */}
@@ -403,7 +491,7 @@ export default function AdminPanel() {
         {/* Admin Navigation */}
         <div className="mb-8">
           <Tabs defaultValue="airdrops" className="w-full">
-            <TabsList className="grid grid-cols-3 md:grid-cols-5 mb-4">
+            <TabsList className="grid grid-cols-3 md:grid-cols-5 mb-12">
               <TabsTrigger value="dashboard" className="data-[state=active]:bg-gray-700">
                 <LayoutDashboard className="w-4 h-4 mr-2" />
                 <span className="hidden md:inline">Dashboard</span>
@@ -428,9 +516,13 @@ export default function AdminPanel() {
                 <Bot className="w-4 h-4 mr-2" />
                 <span className="hidden md:inline">Telegram</span>
               </TabsTrigger>
+              <TabsTrigger value="notifications" className="data-[state=active]:bg-gray-700">
+                <Bell className="w-4 h-4 mr-2" />
+                <span className="hidden md:inline">Notifications</span>
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="airdrops" className="mt-0">
+            <TabsContent value="airdrops" className="mt-12">
               {/* Search and Filter Bar */}
               <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="relative flex-1">
@@ -1042,7 +1134,7 @@ export default function AdminPanel() {
             </TabsContent>
 
             {/* Other tabs remain the same */}
-            <TabsContent value="dashboard" className="mt-0">
+            <TabsContent value="dashboard" className="mt-12">
               <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-white">Dashboard</CardTitle>
@@ -1056,7 +1148,7 @@ export default function AdminPanel() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="categories" className="mt-0">
+            <TabsContent value="categories" className="mt-12">
               <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-white">Categories</CardTitle>
@@ -1068,7 +1160,7 @@ export default function AdminPanel() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="users" className="mt-0">
+            <TabsContent value="users" className="mt-12">
               <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-white">Users</CardTitle>
@@ -1080,7 +1172,7 @@ export default function AdminPanel() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="settings" className="mt-0">
+            <TabsContent value="settings" className="mt-12">
               <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-white">Settings</CardTitle>
@@ -1091,8 +1183,257 @@ export default function AdminPanel() {
                 </CardContent>
               </Card>
             </TabsContent>
-            <TabsContent value="telegram" className="mt-0">
+            <TabsContent value="telegram" className="mt-12">
               <TelegramSettings onSettingsChange={setTelegramSettings} />
+            </TabsContent>
+            <TabsContent value="notifications" className="mt-12">
+              <div className="space-y-6">
+                {/* Custom Notification Form */}
+                {showNotificationForm && (
+                  <Card className="bg-gray-800 border-gray-700 shadow-lg">
+                    <CardHeader className="border-b border-gray-700">
+                      <CardTitle className="text-white flex items-center">
+                        <Bell className="w-5 h-5 mr-2 text-blue-400" />
+                        Send Custom Notification
+                      </CardTitle>
+                      <CardDescription className="text-gray-400">
+                        Create and send custom notifications to your users
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <form onSubmit={handleSendNotification} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="notif-type" className="text-gray-300">
+                                Notification Type
+                              </Label>
+                              <Select
+                                value={notificationForm.type}
+                                onValueChange={(value) => setNotificationForm({ ...notificationForm, type: value })}
+                              >
+                                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="ANNOUNCEMENT">📢 Announcement</SelectItem>
+                                  <SelectItem value="NEW">🎉 New Feature</SelectItem>
+                                  <SelectItem value="UPDATE">📝 Update</SelectItem>
+                                  <SelectItem value="DEADLINE">⏰ Deadline</SelectItem>
+                                  <SelectItem value="HOT">🔥 Hot/Trending</SelectItem>
+                                  <SelectItem value="CLAIM">🎁 Claim Available</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div>
+                              <Label htmlFor="notif-target" className="text-gray-300">
+                                Target Audience
+                              </Label>
+                              <Select
+                                value={notificationForm.target}
+                                onValueChange={(value) => setNotificationForm({ ...notificationForm, target: value })}
+                              >
+                                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="ALL">👥 All Users</SelectItem>
+                                  <SelectItem value="ACTIVE">⚡ Active Users (7 days)</SelectItem>
+                                  <SelectItem value="AIRDROP">🎯 Specific Airdrop</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {notificationForm.target === "AIRDROP" && (
+                              <div>
+                                <Label htmlFor="notif-airdrop" className="text-gray-300">
+                                  Select Airdrop
+                                </Label>
+                                <Select
+                                  value={notificationForm.airdrop_id}
+                                  onValueChange={(value) =>
+                                    setNotificationForm({ ...notificationForm, airdrop_id: value })
+                                  }
+                                >
+                                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                                    <SelectValue placeholder="Choose airdrop..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {airdrops.map((airdrop) => (
+                                      <SelectItem key={airdrop.id} value={airdrop.id}>
+                                        {airdrop.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="notif-title" className="text-gray-300">
+                                Notification Title
+                              </Label>
+                              <Input
+                                id="notif-title"
+                                value={notificationForm.title}
+                                onChange={(e) => setNotificationForm({ ...notificationForm, title: e.target.value })}
+                                className="bg-gray-700 border-gray-600 text-white"
+                                placeholder="e.g., 🎉 New Airdrop Alert!"
+                                required
+                              />
+                            </div>
+
+                            <div>
+                              <Label htmlFor="notif-message" className="text-gray-300">
+                                Message Content
+                              </Label>
+                              <Textarea
+                                id="notif-message"
+                                value={notificationForm.message}
+                                onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })}
+                                className="bg-gray-700 border-gray-600 text-white"
+                                rows={4}
+                                placeholder="Write your notification message here..."
+                                required
+                              />
+                            </div>
+
+                            <div>
+                              <Label htmlFor="notif-schedule" className="text-gray-300">
+                                Send Schedule
+                              </Label>
+                              <Select
+                                value={notificationForm.schedule}
+                                onValueChange={(value) => setNotificationForm({ ...notificationForm, schedule: value })}
+                              >
+                                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="NOW">📤 Send Now</SelectItem>
+                                  <SelectItem value="SCHEDULE">⏰ Schedule Later</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Preview Section */}
+                        <div className="border-t border-gray-700 pt-6">
+                          <Label className="text-gray-300 text-lg font-semibold mb-4 block">Preview</Label>
+                          <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                                <Bell className="w-4 h-4 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="text-white font-medium">
+                                  {notificationForm.title || "Notification Title"}
+                                </h4>
+                                <p className="text-gray-300 text-sm mt-1">
+                                  {notificationForm.message || "Notification message will appear here..."}
+                                </p>
+                                <p className="text-gray-500 text-xs mt-2">Just now</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-4 pt-2 border-t border-gray-700">
+                          <Button
+                            type="submit"
+                            className="bg-blue-600 hover:bg-blue-700"
+                            disabled={loadingNotifications}
+                          >
+                            {loadingNotifications ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Send className="w-4 h-4 mr-2" />
+                            )}
+                            Send Notification
+                          </Button>
+                          <Button type="button" onClick={() => setShowNotificationForm(false)} variant="outline">
+                            <X className="w-4 h-4 mr-2" />
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Action Button */}
+                {!showNotificationForm && (
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Notification Center</h2>
+                      <p className="text-gray-400">Send custom notifications and view history</p>
+                    </div>
+                    <Button onClick={() => setShowNotificationForm(true)} className="bg-blue-600 hover:bg-blue-700">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Send Notification
+                    </Button>
+                  </div>
+                )}
+
+                {/* Notification History */}
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center justify-between">
+                      <span>Recent Notifications</span>
+                      <Button onClick={fetchNotifications} variant="outline" size="sm">
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh
+                      </Button>
+                    </CardTitle>
+                    <CardDescription className="text-gray-400">View and manage sent notifications</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingNotifications ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Bell className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                        <p className="text-gray-400">No notifications sent yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {notifications.map((notification) => (
+                          <div key={notification.id} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge className={`${getNotificationTypeColor(notification.type)} text-white`}>
+                                    {notification.type}
+                                  </Badge>
+                                  <span className="text-xs text-gray-400">
+                                    {new Date(notification.created_at).toLocaleString()}
+                                  </span>
+                                </div>
+                                <h4 className="text-white font-medium mb-1">{notification.title}</h4>
+                                <p className="text-gray-300 text-sm">{notification.message}</p>
+                              </div>
+                              <div className="flex items-center gap-2 ml-4">
+                                <div className="text-right">
+                                  <p className="text-xs text-gray-400">Status</p>
+                                  <Badge variant={notification.is_read ? "default" : "secondary"}>
+                                    {notification.is_read ? "Read" : "Unread"}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
