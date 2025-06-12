@@ -179,7 +179,7 @@ export default function RootLayout({
         {/* AdSense Auto Ads */}
         <script
           async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || "ca-pub-0000000000000000"}`}
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || "ca-pub-9620623978081909"}`}
           crossOrigin="anonymous"
         />
         
