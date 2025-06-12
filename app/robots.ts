@@ -8,17 +8,27 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin-secret-panel-xyz/", "/api/", "/private/", "/_next/", "/static/"],
+        disallow: ["/admin-secret-panel-xyz/", "/api/", "/private/"],
       },
       {
         userAgent: "Googlebot",
         allow: "/",
-        disallow: ["/admin-secret-panel-xyz/", "/api/", "/private/"],
+        disallow: ["/admin-secret-panel-xyz/", "/private/"],
       },
       {
         userAgent: "Bingbot",
         allow: "/",
-        disallow: ["/admin-secret-panel-xyz/", "/api/", "/private/"],
+        disallow: ["/admin-secret-panel-xyz/", "/private/"],
+      },
+      {
+        userAgent: "AdsBot-Google",
+        allow: "/",
+        disallow: ["/admin-secret-panel-xyz/", "/private/"],
+      },
+      {
+        userAgent: "Mediapartners-Google",
+        allow: "/",
+        disallow: ["/admin-secret-panel-xyz/", "/private/"],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

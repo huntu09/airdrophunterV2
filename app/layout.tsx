@@ -136,6 +136,8 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-status-bar-style": "black-translucent",
     "msapplication-TileColor": "#3b82f6",
     "application-name": "AirdropHunter",
+    "google-adsense-account": process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || "",
+    "google-site-verification": process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
   },
   generator: "v0.dev",
 }
@@ -182,20 +184,19 @@ export default function RootLayout({
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || "ca-pub-9620623978081909"}`}
           crossOrigin="anonymous"
         />
-        
+
         {/* Google Analytics */}
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-6DSR6F8CKT"></script>
-<script
-  dangerouslySetInnerHTML={{
-    __html: `
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-6DSR6F8CKT"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-6DSR6F8CKT');
     `,
-  }}
-/>
-
+          }}
+        />
 
         {/* Simple PWA Service Worker Registration */}
         <script
@@ -214,6 +215,21 @@ if ('serviceWorker' in navigator) {
       
       console.log('✅ Service Worker registered successfully!');
       console.log('📍 Scope:', registration.scope);
+      
+      // Configure cache exclusions for AdSense
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'EXCLUDE_FROM_CACHE',
+          patterns: [
+            /googleads\\.g\\.doubleclick\\.net/,
+            /googlesyndication\\.com/,
+            /googleadservices\\.com/,
+            /google\\.com\\/adsense/,
+            /pagead2\\.googlesyndication\\.com/,
+            /tpc\\.googlesyndication\\.com/
+          ]
+        });
+      }
       
       // Handle updates
       registration.addEventListener('updatefound', () => {

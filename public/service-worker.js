@@ -1,63 +1,114 @@
-// Service Worker for AirdropHunter PWA
-const CACHE_NAME = "airdrophunter-cache-v1"
-const urlsToCache = ["/", "/offline", "/styles/globals.css"]
+const CACHE_NAME = "airdrophunter-v1"
+const STATIC_CACHE_URLS = ["/", "/offline", "/manifest.json"]
 
-// Install a service worker
+// AdSense domains to exclude from caching
+const ADSENSE_PATTERNS = [
+  /googleads\.g\.doubleclick\.net/,
+  /googlesyndication\.com/,
+  /googleadservices\.com/,
+  /google\.com\/adsense/,
+  /pagead2\.googlesyndication\.com/,
+  /tpc\.googlesyndication\.com/,
+]
+
+// Install event
 self.addEventListener("install", (event) => {
+  console.log("🔧 Service Worker installing...")
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log("Opened cache")
-      return cache.addAll(urlsToCache)
-    }),
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => {
+        console.log("📦 Caching static assets")
+        return cache.addAll(STATIC_CACHE_URLS)
+      })
+      .then(() => {
+        console.log("✅ Service Worker installed")
+        return self.skipWaiting()
+      }),
   )
 })
 
-// Cache and return requests
-self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Cache hit - return response
-      if (response) {
-        return response
-      }
-      return fetch(event.request)
-        .then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== "basic") {
-            return response
-          }
-
-          // Clone the response
-          const responseToCache = response.clone()
-
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache)
-          })
-
-          return response
-        })
-        .catch(() => {
-          // If fetch fails, show offline page
-          if (event.request.mode === "navigate") {
-            return caches.match("/offline")
-          }
-        })
-    }),
-  )
-})
-
-// Update a service worker
+// Activate event
 self.addEventListener("activate", (event) => {
-  const cacheWhitelist = [CACHE_NAME]
+  console.log("🚀 Service Worker activating...")
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName)
-          }
-        }),
-      )
-    }),
+    caches
+      .keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              console.log("🗑️ Deleting old cache:", cacheName)
+              return caches.delete(cacheName)
+            }
+          }),
+        )
+      })
+      .then(() => {
+        console.log("✅ Service Worker activated")
+        return self.clients.claim()
+      }),
   )
+})
+
+// Fetch event
+self.addEventListener("fetch", (event) => {
+  const { request } = event
+  const url = new URL(request.url)
+
+  // Skip AdSense requests - let them go directly to network
+  if (ADSENSE_PATTERNS.some((pattern) => pattern.test(url.href))) {
+    console.log("🚫 Skipping cache for AdSense:", url.href)
+    return // Let it go to network directly
+  }
+
+  // Skip non-GET requests
+  if (request.method !== "GET") {
+    return
+  }
+
+  // Skip API routes
+  if (url.pathname.startsWith("/api/")) {
+    return
+  }
+
+  event.respondWith(
+    caches
+      .match(request)
+      .then((response) => {
+        // Return cached version or fetch from network
+        return (
+          response ||
+          fetch(request).then((fetchResponse) => {
+            // Don't cache if it's not a successful response
+            if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== "basic") {
+              return fetchResponse
+            }
+
+            // Clone the response
+            const responseToCache = fetchResponse.clone()
+
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache)
+            })
+
+            return fetchResponse
+          })
+        )
+      })
+      .catch(() => {
+        // Return offline page for navigation requests
+        if (request.mode === "navigate") {
+          return caches.match("/offline")
+        }
+      }),
+  )
+})
+
+// Handle messages from main thread
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "EXCLUDE_FROM_CACHE") {
+    console.log("📝 Received cache exclusion patterns")
+    // Patterns already defined above
+  }
 })
