@@ -11,7 +11,7 @@ import { WelcomeTour } from "@/components/welcome-tour"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://airdrophunter.com"),
+  metadataBase: new URL("https://airdropshunter.cloud"),
   title: {
     default: "AirdropHunter - #1 Platform for Free Crypto Airdrops & Tokens",
     template: "%s | AirdropHunter - Free Crypto Airdrops",
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     "web3 airdrops",
     "metaverse tokens",
   ],
-  authors: [{ name: "AirdropHunter Team", url: "https://airdrophunter.com/about" }],
+  authors: [{ name: "AirdropHunter Team", url: "https://airdropshunter.cloud/about" }],
   creator: "AirdropHunter",
   publisher: "AirdropHunter",
   category: "Finance",
@@ -122,7 +122,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "your-google-search-console-verification-code",
+    google: "SxHIi6hXiY6FWIpRW4uRRjPCfv4h2bsFuSVoFmpJ_PQ",
     yandex: "your-yandex-verification-code",
   },
   appleWebApp: {
@@ -182,6 +182,20 @@ export default function RootLayout({
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || "ca-pub-0000000000000000"}`}
           crossOrigin="anonymous"
         />
+        
+        {/* Google Analytics */}
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6DSR6F8CKT"></script>
+<script
+  dangerouslySetInnerHTML={{
+    __html: `
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-6DSR6F8CKT');
+    `,
+  }}
+/>
+
 
         {/* Simple PWA Service Worker Registration */}
         <script
