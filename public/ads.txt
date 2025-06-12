@@ -1,9 +1,9 @@
 # ads.txt file for AdSense verification
 # Replace with your actual AdSense Publisher ID when you get approved
-# Format: google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+# Format: google.com, pub-9620623978081909, DIRECT, f08c47fec0942fa0
 
 # Placeholder - replace with real publisher ID
-# google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+# google.com, pub-9620623978081909, DIRECT, f08c47fec0942fa0
 
 # Instructions:
 # 1. Get your real AdSense Publisher ID from Google AdSense dashboard
@@ -12,4 +12,4 @@
 # 4. Remove this instruction section
 
 # Example:
-# google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0
+# google.com, pub-9620623978081909, DIRECT, f08c47fec0942fa0
