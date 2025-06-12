@@ -1,10 +1,23 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+// Don't create client at module level - create it inside the function
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Supabase configuration is missing")
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey)
+}
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Create client inside the function, not at module level
+    const supabase = getSupabaseClient()
+
     const { id: commentId } = params
     const body = await request.json()
     const { reaction_type } = body
@@ -53,6 +66,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
   } catch (error) {
     console.error("Error in POST /api/comments/[id]/react:", error)
+
+    // Handle Supabase configuration error specifically
+    if (error instanceof Error && error.message.includes("Supabase configuration")) {
+      return NextResponse.json({ error: "Database configuration error" }, { status: 500 })
+    }
+
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

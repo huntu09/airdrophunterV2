@@ -1,7 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("Supabase configuration is missing. Please check your environment variables.")
+  }
+
+  return createClient(supabaseUrl, supabaseKey)
+}
 
 // Get comments for an airdrop
 export async function GET(request: NextRequest) {
@@ -14,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get comments with reactions using the view
-    const { data: comments, error } = await supabase
+    const { data: comments, error } = await getSupabaseClient()
       .from("comments_with_reactions")
       .select("*")
       .eq("airdrop_id", airdropId)
@@ -66,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     // Rate limiting check (5 comments per hour per IP)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    const { data: recentComments } = await supabase
+    const { data: recentComments } = await getSupabaseClient()
       .from("comments")
       .select("id")
       .eq("ip_address", ip)
@@ -77,7 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert comment
-    const { data: comment, error } = await supabase
+    const { data: comment, error } = await getSupabaseClient()
       .from("comments")
       .insert({
         airdrop_id,

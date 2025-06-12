@@ -89,6 +89,16 @@ export class AdManager {
 
   private async initializeAdSense(): Promise<void> {
     try {
+      // Validate publisher ID first
+      if (
+        !this.adsenseConfig.publisherId ||
+        this.adsenseConfig.publisherId === "ca-pub-0000000000000000" ||
+        this.adsenseConfig.publisherId.length < 10
+      ) {
+        console.warn("⚠️ AdSense Publisher ID not configured properly")
+        return
+      }
+
       // AdSense initialization logic
       if (typeof window !== "undefined" && !window.adsbygoogle) {
         const script = document.createElement("script")

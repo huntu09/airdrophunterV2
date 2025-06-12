@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Bell, Calendar, Award, Info, Clock, TrendingUp, X } from "lucide-react"
+import { Bell, Calendar, Award, Info, Clock, TrendingUp, X, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { createPortal } from "react-dom"
+import { useRouter } from "next/navigation"
 
 interface Notification {
   id: string
@@ -26,18 +27,46 @@ export function NotificationBell({ className }: NotificationBellProps) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const router = useRouter()
+
+  const ITEMS_PER_PAGE = 10
+
+  // Fetch airdrop slug by ID
+  const getAirdropSlug = async (airdropId: string): Promise<string | null> => {
+    try {
+      const response = await fetch(`/api/airdrops/${airdropId}`)
+      if (response.ok) {
+        const airdrop = await response.json()
+        return airdrop.slug
+      }
+    } catch (error) {
+      console.error("Error fetching airdrop slug:", error)
+    }
+    return null
+  }
 
   // Fetch notifications
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (pageNum = 1, append = false) => {
     try {
-      const response = await fetch("/api/notifications?limit=20")
+      setLoadingMore(pageNum > 1)
+      const response = await fetch(`/api/notifications?limit=${ITEMS_PER_PAGE}&page=${pageNum}`)
       if (response.ok) {
         const data = await response.json()
-        setNotifications(data.notifications || [])
+
+        if (append) {
+          setNotifications((prev) => [...prev, ...(data.notifications || [])])
+        } else {
+          setNotifications(data.notifications || [])
+        }
+
         setUnreadCount(data.unreadCount || 0)
+        setHasMore(data.notifications && data.notifications.length === ITEMS_PER_PAGE)
       } else {
         console.error("Failed to fetch notifications:", response.status)
       }
@@ -45,7 +74,16 @@ export function NotificationBell({ className }: NotificationBellProps) {
       console.error("Error fetching notifications:", error)
     } finally {
       setIsLoading(false)
+      setLoadingMore(false)
     }
+  }
+
+  // Load more notifications
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return
+    const nextPage = page + 1
+    await fetchNotifications(nextPage, true)
+    setPage(nextPage)
   }
 
   // Calculate dropdown position
@@ -66,6 +104,29 @@ export function NotificationBell({ className }: NotificationBellProps) {
       calculatePosition()
     }
     setIsOpen(!isOpen)
+  }
+
+  // Handle notification click
+  const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read first
+    if (!notification.is_read) {
+      await markAsRead(notification.id)
+    }
+
+    // Navigate to airdrop page if airdrop_id exists and notification is automatic
+    if (notification.airdrop_id && (notification.type === "NEW" || notification.type === "HOT")) {
+      setIsOpen(false)
+
+      // Get the airdrop slug first
+      const slug = await getAirdropSlug(notification.airdrop_id)
+      if (slug) {
+        router.push(`/airdrop/${slug}`)
+      } else {
+        console.error("Could not find airdrop slug for ID:", notification.airdrop_id)
+        // Fallback: try to navigate with ID anyway
+        router.push(`/airdrop/${notification.airdrop_id}`)
+      }
+    }
   }
 
   // Mark notification as read
@@ -190,12 +251,17 @@ export function NotificationBell({ className }: NotificationBellProps) {
     })
   }
 
+  // Check if notification is clickable (automatic)
+  const isClickableNotification = (notification: Notification) => {
+    return notification.airdrop_id && (notification.type === "NEW" || notification.type === "HOT")
+  }
+
   useEffect(() => {
     setMounted(true)
     fetchNotifications()
 
     // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000)
+    const interval = setInterval(() => fetchNotifications(1, false), 30000)
 
     // Handle scroll and resize
     const handleScrollResize = () => {
@@ -259,7 +325,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
 
         {/* Notifications List */}
         <div className="max-h-80 overflow-y-auto bg-white dark:bg-gray-800">
-          {isLoading ? (
+          {isLoading && page === 1 ? (
             <div className="p-8 text-center">
               <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
@@ -273,14 +339,17 @@ export function NotificationBell({ className }: NotificationBellProps) {
             <div>
               {notifications.map((notification) => {
                 const style = getNotificationStyle(notification.type)
+                const isClickable = isClickableNotification(notification)
+
                 return (
                   <div
                     key={notification.id}
                     className={cn(
-                      "flex gap-3 p-4 border-b border-gray-100 dark:border-gray-700 last:border-0 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50",
+                      "flex gap-3 p-4 border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors",
                       !notification.is_read && "bg-blue-50/50 dark:bg-blue-900/10",
+                      isClickable ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50" : "",
                     )}
-                    onClick={() => !notification.is_read && markAsRead(notification.id)}
+                    onClick={() => isClickable && handleNotificationClick(notification)}
                   >
                     {/* Icon */}
                     <div
@@ -310,18 +379,43 @@ export function NotificationBell({ className }: NotificationBellProps) {
                         )}
                       </div>
 
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                         {linkifyText(notification.message)}
                       </p>
 
                       <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-500">
                         <Calendar className="w-3 h-3 mr-1" />
                         {formatRelativeTime(notification.created_at)}
+                        {isClickable && <span className="ml-2 text-blue-500 text-xs">• Click to view</span>}
                       </div>
                     </div>
                   </div>
                 )
               })}
+
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="p-3 text-center border-t border-gray-200 dark:border-gray-700">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs w-full flex items-center justify-center gap-1 text-gray-600 hover:text-gray-700 dark:text-gray-400"
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-1"></div>
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        Load more <ChevronDown className="w-3 h-3" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -335,7 +429,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
               className="text-xs text-gray-600 hover:text-gray-700 dark:text-gray-400 w-full hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={() => setIsOpen(false)}
             >
-              View all notifications
+              Close
             </Button>
           </div>
         )}
@@ -355,7 +449,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
       >
         <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
         {unreadCount > 0 && (
-          <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center bg-red-500 text-white text-xs animate-pulse">
+          <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center bg-red-500 text-white text-xs">
             {unreadCount > 99 ? "99+" : unreadCount}
           </Badge>
         )}

@@ -414,7 +414,6 @@ window.hideInstallPrompt = hideInstallPrompt;
             `,
           }}
         />
-        <meta name="google-adsense-account" content="ca-pub-9620623978081909">
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>

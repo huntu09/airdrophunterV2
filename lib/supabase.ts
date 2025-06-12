@@ -34,10 +34,26 @@ export interface AirdropStep {
   created_at: string
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
+// Don't initialize at module level - only create when function is called
 export function createClient() {
+  // Only create the client when the function is called (at runtime)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // For build time, return a mock client that will be replaced at runtime
+    if (process.env.NODE_ENV === "development") {
+      console.warn("⚠️ Supabase credentials missing, but in development mode. Using mock client.")
+    }
+
+    // Return a mock client that will throw a clear error if actually used
+    return {
+      from: () => {
+        throw new Error("Supabase client not properly initialized. Check your environment variables.")
+      },
+    } as any
+  }
+
   return createSupabaseClient(supabaseUrl, supabaseAnonKey)
 }
 
@@ -86,12 +102,24 @@ function validateEnvironment() {
 
 // Check if Supabase is available
 export function isSupabaseAvailable(): boolean {
+  // Don't run validation during build
+  if (typeof window === "undefined" && process.env.NODE_ENV === "production") {
+    // We're in a Node.js environment during build
+    return false
+  }
+
   const validation = validateEnvironment()
   return validation.isValid
 }
 
 // Get Supabase client with error handling
 export function getSupabase() {
+  // Don't validate during build
+  if (typeof window === "undefined" && process.env.NODE_ENV === "production") {
+    // We're in a Node.js environment during build
+    return createClient() // This will return our mock client
+  }
+
   const validation = validateEnvironment()
 
   if (!validation.isValid) {

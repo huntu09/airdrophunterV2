@@ -6,9 +6,18 @@ export async function GET(request: NextRequest) {
     const supabase = createClient()
     const { searchParams } = new URL(request.url)
     const limit = Number.parseInt(searchParams.get("limit") || "10")
+    const page = Number.parseInt(searchParams.get("page") || "1")
     const unreadOnly = searchParams.get("unread_only") === "true"
 
-    let query = supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(limit)
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit
+
+    let query = supabase
+      .from("notifications")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit)
+      .range(offset, offset + limit - 1)
 
     if (unreadOnly) {
       query = query.eq("is_read", false)

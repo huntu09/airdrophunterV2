@@ -363,7 +363,9 @@ export function CommentsSection({ airdropId, theme }: CommentsSectionProps) {
       className={`${theme === "dark" ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} hover:shadow-lg transition-shadow duration-300`}
     >
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
+        <CardTitle
+          className={`flex items-center gap-2 text-xl md:text-2xl ${theme === "dark" ? "text-gray-100" : "text-gray-900"}`}
+        >
           <MessageCircle className="w-6 h-6" />
           Komentar ({comments.length})
         </CardTitle>

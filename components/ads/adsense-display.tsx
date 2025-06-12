@@ -41,8 +41,35 @@ export function AdSenseDisplay({
   const [adError, setAdError] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
 
-  // AdSense Publisher ID - Ganti dengan ID kamu nanti
-  const PUBLISHER_ID = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || "ca-pub-0000000000000000"
+  // AdSense Publisher ID - akan diambil dari environment variable
+  const PUBLISHER_ID = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID
+
+  const [isAdSenseReady, setIsAdSenseReady] = useState(false)
+
+  useEffect(() => {
+    if (PUBLISHER_ID && PUBLISHER_ID !== "ca-pub-0000000000000000" && PUBLISHER_ID.length >= 10) {
+      setIsAdSenseReady(true)
+    } else {
+      setIsAdSenseReady(false)
+    }
+  }, [PUBLISHER_ID])
+
+  // Jika belum ada publisher ID yang valid, jangan render ads
+  if (!PUBLISHER_ID || PUBLISHER_ID === "ca-pub-0000000000000000" || PUBLISHER_ID.length < 10) {
+    return (
+      <div className={`ad-placeholder ${className}`}>
+        {fallback || (
+          <Card className="border-dashed border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600">
+            <CardContent className="p-4 text-center">
+              <EyeOff className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">AdSense not configured</p>
+              <p className="text-xs text-gray-400 mt-1">Set NEXT_PUBLIC_ADSENSE_PUBLISHER_ID in environment</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    )
+  }
 
   useEffect(() => {
     const loadAdSense = async () => {
@@ -110,8 +137,10 @@ export function AdSenseDisplay({
       }
     }
 
-    loadAdSense()
-  }, [adSlot, position, size])
+    if (isAdSenseReady) {
+      loadAdSense()
+    }
+  }, [adSlot, position, size, isAdSenseReady])
 
   const getAdDimensions = () => {
     switch (size) {

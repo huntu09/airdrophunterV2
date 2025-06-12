@@ -61,6 +61,86 @@ function AnimatedCard({ children, delay, className = "" }: AnimatedCardProps) {
   )
 }
 
+// Blockchain icon component
+function BlockchainIcon({ blockchain }: { blockchain: string }) {
+  const getBlockchainIcon = (chain: string) => {
+    const chainLower = chain.toLowerCase()
+
+    switch (chainLower) {
+      case "ethereum":
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">Ξ</span>
+          </div>
+        )
+      case "bnb":
+      case "bsc":
+      case "binance":
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">B</span>
+          </div>
+        )
+      case "polygon":
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-purple-500 to-purple-700 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">P</span>
+          </div>
+        )
+      case "solana":
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">S</span>
+          </div>
+        )
+      case "arbitrum":
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">A</span>
+          </div>
+        )
+      case "optimism":
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">O</span>
+          </div>
+        )
+      case "avalanche":
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-red-400 to-red-600 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">A</span>
+          </div>
+        )
+      case "cardano":
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">₳</span>
+          </div>
+        )
+      case "layer 1":
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-gray-500 to-gray-700 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">L1</span>
+          </div>
+        )
+      case "layer 2":
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-700 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">L2</span>
+          </div>
+        )
+      default:
+        return (
+          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 flex items-center justify-center">
+            <span className="text-white text-xs font-bold">?</span>
+          </div>
+        )
+    }
+  }
+
+  return getBlockchainIcon(blockchain)
+}
+
 export default function AirdropsHunter() {
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [cryptoData, setCryptoData] = useState<CryptoData[]>([])
@@ -370,14 +450,23 @@ export default function AirdropsHunter() {
         )}
       </div>
 
-      {/* Header Ad - Lazy loaded */}
+      {/* Affiliate Banner - Always visible */}
       <AnimatedCard delay={300}>
+        <div className="px-4 mb-6">
+          <LazyWrapper fallback={<div className="h-32 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />}>
+            <LazyExchangeCarousel theme={theme} />
+          </LazyWrapper>
+        </div>
+      </AnimatedCard>
+
+      {/* Header Ad - Separate from affiliate */}
+      <AnimatedCard delay={350}>
         <div className="px-4 mb-6">
           <LazyWrapper fallback={<div className="h-24 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />}>
             <LazyHybridAdDisplay
               position="header"
               size="leaderboard"
-              fallback={<LazyExchangeCarousel theme={theme} />}
+              fallback={<div className="text-center py-4 text-gray-500">Ad space</div>}
             />
           </LazyWrapper>
         </div>
@@ -424,11 +513,6 @@ export default function AirdropsHunter() {
             <h2 className={`text-2xl font-bold ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
               {searchTerm ? `SEARCH RESULTS` : `LATEST AIRDROPS`}
             </h2>
-            {filteredAirdrops.length > 0 && (
-              <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                Showing {displayedAirdrops.length} of {filteredAirdrops.length} airdrops
-              </span>
-            )}
           </div>
         </AnimatedCard>
 
@@ -459,29 +543,34 @@ export default function AirdropsHunter() {
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-green-500/0 via-green-500/5 to-green-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                      <CardContent className="p-6 relative z-10">
+                      <CardContent className="p-4 relative z-10">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="relative w-[60px] h-[60px] rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-[40px] h-[40px] rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
                               <OptimizedImage
                                 src={airdrop.logo_url || "/placeholder.svg"}
                                 alt={`${airdrop.name} logo`}
-                                width={60}
-                                height={60}
+                                width={40}
+                                height={40}
                                 className="w-full h-full rounded-full"
                                 index={index}
                                 type="logo"
                               />
                             </div>
                             <div>
-                              <h3 className="text-xl font-semibold mb-2 group-hover:text-green-500 transition-colors duration-300">
+                              <h3
+                                className={`text-lg font-semibold mb-1 group-hover:text-green-500 transition-colors duration-300 ${
+                                  theme === "dark" ? "text-white" : "text-gray-900"
+                                }`}
+                              >
                                 {airdrop.name}
                               </h3>
                               <div className="flex items-center gap-2 text-gray-400">
                                 <Wrench className="w-4 h-4" />
-                                <span>
-                                  {airdrop.category} • {airdrop.blockchain}
-                                </span>
+                                <span>{airdrop.category}</span>
+                                <span>•</span>
+                                <BlockchainIcon blockchain={airdrop.blockchain} />
+                                <span className="text-sm">{airdrop.blockchain}</span>
                               </div>
                             </div>
                           </div>
@@ -490,9 +579,9 @@ export default function AirdropsHunter() {
                           )}
                         </div>
 
-                        <div className="mt-6 flex items-center justify-between">
+                        <div className="mt-4 flex items-center justify-between">
                           <Badge
-                            className={`font-semibold px-4 py-2 animate-pulse group-hover:animate-none group-hover:scale-105 transition-transform duration-300 ${
+                            className={`font-semibold px-3 py-1 group-hover:scale-105 transition-transform duration-300 ${
                               airdrop.status === "CONFIRMED"
                                 ? "bg-green-600 hover:bg-green-700"
                                 : airdrop.status === "UPCOMING"

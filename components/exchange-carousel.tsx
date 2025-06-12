@@ -96,27 +96,29 @@ export function ExchangeCarousel({ theme }: ExchangeCarouselProps) {
         {/* Shimmer effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
 
-        <CardContent className="p-8 text-center relative z-10">
-          <div className="mb-6">
-            <div className="w-16 h-16 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center hover:rotate-12 transition-transform duration-300">
-              <Image
-                src={currentExchange.logo || "/placeholder.svg"}
-                alt={`${currentExchange.name} logo`}
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
+        <CardContent className="p-4 text-center relative z-10">
+          <div className="mb-4">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                <Image
+                  src={currentExchange.logo || "/placeholder.svg"}
+                  alt={`${currentExchange.name} logo`}
+                  width={20}
+                  height={20}
+                  className="rounded"
+                />
+              </div>
+              <h3 className="text-lg font-bold">{currentExchange.name}</h3>
             </div>
-            <h3 className="text-2xl font-bold mb-2">{currentExchange.name}</h3>
-            <p className="text-sm opacity-90 mb-2">{currentExchange.bonus}</p>
+            <p className="text-xs opacity-90 mb-2">{currentExchange.bonus}</p>
           </div>
 
-          <p className="text-white/90 mb-8 leading-relaxed">{currentExchange.description}</p>
+          <p className="text-white/90 mb-4 leading-relaxed text-sm">{currentExchange.description}</p>
 
           <a href={currentExchange.affiliateLink} target="_blank" rel="noopener noreferrer" className="inline-block">
             <Button
-              className="bg-white/20 hover:bg-white/30 text-white font-semibold px-8 py-3 rounded-lg hover:scale-105 transition-all duration-300 hover:shadow-lg backdrop-blur-sm border border-white/20"
-              size="lg"
+              className="bg-white/20 hover:bg-white/30 text-white font-semibold px-6 py-2 rounded-lg hover:scale-105 transition-all duration-300 hover:shadow-lg backdrop-blur-sm border border-white/20 text-sm"
+              size="default"
             >
               <span>TRADE NOW</span>
               <ExternalLink className="w-4 h-4 ml-2" />

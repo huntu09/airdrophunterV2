@@ -194,7 +194,9 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
             </div>
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-bold mb-4 text-center text-gray-900 dark:text-white">
+          <h1
+            className={`text-3xl md:text-4xl font-bold mb-4 text-center ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+          >
             {airdrop.name}
           </h1>
           <p
@@ -229,7 +231,9 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
           className={`mb-8 ${theme === "dark" ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} hover:shadow-lg transition-shadow duration-300`}
         >
           <CardHeader>
-            <CardTitle className="text-xl md:text-2xl text-gray-900 dark:text-gray-100">About Project</CardTitle>
+            <CardTitle className={`text-xl md:text-2xl ${theme === "dark" ? "text-gray-100" : "text-gray-900"}`}>
+              About Project
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p
@@ -281,7 +285,9 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
             className={`mb-8 ${theme === "dark" ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} hover:shadow-lg transition-shadow duration-300`}
           >
             <CardHeader>
-              <CardTitle className="text-xl md:text-2xl text-gray-900 dark:text-gray-100">Step by Step Guide</CardTitle>
+              <CardTitle className={`text-xl md:text-2xl ${theme === "dark" ? "text-gray-100" : "text-gray-900"}`}>
+                Step by Step Guide
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -298,7 +304,9 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
                       </div>
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-semibold mb-2 text-sm md:text-base text-gray-900 dark:text-gray-100">
+                      <h4
+                        className={`font-semibold mb-2 text-sm md:text-base ${theme === "dark" ? "text-gray-100" : "text-gray-900"}`}
+                      >
                         {step.title}
                         {!step.is_required && <span className="text-gray-500 ml-2">(Optional)</span>}
                       </h4>
@@ -319,7 +327,9 @@ export default function AirdropDetailPage({ params }: { params: { slug: string }
             className={`mb-8 ${theme === "dark" ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} hover:shadow-lg transition-shadow duration-300`}
           >
             <CardHeader>
-              <CardTitle className="text-xl md:text-2xl text-gray-900 dark:text-gray-100">Other Airdrops</CardTitle>
+              <CardTitle className={`text-xl md:text-2xl ${theme === "dark" ? "text-gray-100" : "text-gray-900"}`}>
+                Other Airdrops
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

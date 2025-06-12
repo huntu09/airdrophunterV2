@@ -1,9 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase"
 import { notificationGenerator } from "@/lib/notification-generator"
+
+// Import createClient function but don't call it at module level
+import { createClient } from "@/lib/supabase"
 
 export async function GET(request: NextRequest) {
   try {
+    // Only create the client when the function is called (at runtime)
     const supabase = createClient()
     const { searchParams } = new URL(request.url)
 
@@ -47,6 +50,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Only create the client when the function is called (at runtime)
     const supabase = createClient()
     const body = await request.json()
 
