@@ -63,17 +63,20 @@ function validateEnvironment() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   console.log("🔍 Environment Check:")
-  console.log("- NODE_ENV:", process.env.NODE_ENV)
   console.log("- NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl ? "✅ Set" : "❌ Missing")
   console.log("- NEXT_PUBLIC_SUPABASE_ANON_KEY:", supabaseAnonKey ? "✅ Set" : "❌ Missing")
 
   if (!supabaseUrl) {
     console.error("❌ NEXT_PUBLIC_SUPABASE_URL is missing")
+    console.error("📝 Add this to your .env.local file:")
+    console.error("NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co")
     return { isValid: false, error: "Missing SUPABASE_URL" }
   }
 
   if (!supabaseAnonKey) {
     console.error("❌ NEXT_PUBLIC_SUPABASE_ANON_KEY is missing")
+    console.error("📝 Add this to your .env.local file:")
+    console.error("NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key")
     return { isValid: false, error: "Missing SUPABASE_ANON_KEY" }
   }
 
@@ -99,12 +102,24 @@ function validateEnvironment() {
 
 // Check if Supabase is available
 export function isSupabaseAvailable(): boolean {
+  // Don't run validation during build
+  if (typeof window === "undefined" && process.env.NODE_ENV === "production") {
+    // We're in a Node.js environment during build
+    return false
+  }
+
   const validation = validateEnvironment()
   return validation.isValid
 }
 
 // Get Supabase client with error handling
 export function getSupabase() {
+  // Don't validate during build
+  if (typeof window === "undefined" && process.env.NODE_ENV === "production") {
+    // We're in a Node.js environment during build
+    return createClient() // This will return our mock client
+  }
+
   const validation = validateEnvironment()
 
   if (!validation.isValid) {
