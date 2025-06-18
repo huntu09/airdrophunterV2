@@ -3,18 +3,17 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Flame, Send, Twitter, RefreshCw, Zap, MessageCircle } from "lucide-react"
+import { Flame, RefreshCw, TrendingUp, Calendar } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, TrendingUp } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { LazyAirdropCard } from "@/components/lazy-airdrop-card"
 import { PerformanceMonitor } from "@/components/performance-monitor"
 import { useAirdropsCache } from "@/hooks/use-airdrops-cache"
 import { HeaderBannerAd, InContentAd, ResponsiveAd } from "@/components/adsense-ad"
 import { LoadMoreDisclaimer } from "@/components/compliance-disclaimer"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { MarketTicker } from "@/components/market-ticker"
 
 function AffiliateBannerCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -269,84 +268,13 @@ export default function AirdropHunter() {
     <div className="min-h-screen bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white transition-colors">
       <PerformanceMonitor />
 
-      {/* Social Media Header */}
-      <div className="bg-gray-100 dark:bg-[#2a2a2a] py-3 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <div className="flex justify-center space-x-4 flex-1">
-              {/* Telegram Button - Enhanced */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="bg-gradient-to-br from-[#8bc34a] to-[#7cb342] hover:from-[#9ccc65] hover:to-[#8bc34a] text-white rounded-xl w-14 h-14 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform"
-                    >
-                      <Send className="h-6 w-6 group-hover:rotate-12 transition-transform" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Join our Telegram</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Twitter Button - Enhanced */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="bg-gradient-to-br from-[#8bc34a] to-[#7cb342] hover:from-[#9ccc65] hover:to-[#8bc34a] text-white rounded-xl w-14 h-14 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform"
-                    >
-                      <Twitter className="h-6 w-6 group-hover:rotate-12 transition-transform" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Follow on Twitter</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Discord Button - Enhanced (Replacing Facebook) */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="bg-gradient-to-br from-[#8bc34a] to-[#7cb342] hover:from-[#9ccc65] hover:to-[#8bc34a] text-white rounded-xl w-14 h-14 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform"
-                    >
-                      <MessageCircle className="h-6 w-6 group-hover:rotate-12 transition-transform" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Join our Discord</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            {/* Performance & Controls */}
-            <div className="flex items-center gap-2">
-              {/* Cache Status */}
-              {isStale && (
-                <Badge variant="secondary" className="text-xs bg-[#7cb342]/20 text-[#7cb342] animate-pulse">
-                  <Zap className="h-3 w-3 mr-1" />
-                  Refreshing...
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* 📊 NEW: Sideways Market Ticker */}
+      <MarketTicker />
 
       {/* Header Banner Ad */}
       <HeaderBannerAd />
 
-      {/* Affiliate Banner Carousel - Reduced padding */}
+      {/* Affiliate Banner Carousel */}
       <section className="py-4 px-4">
         <div className="max-w-7xl mx-auto">
           <AffiliateBannerCarousel />

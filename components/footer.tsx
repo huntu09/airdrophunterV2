@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Send, Twitter, Facebook, Instagram, Youtube, Mail, MapPin, Heart, Shield, Zap, TrendingUp } from "lucide-react"
 import { ResponsiveAd } from "@/components/adsense-ad"
+import { useToast } from "@/hooks/use-toast"
 
 export function Footer() {
+  const { toast } = useToast()
   const currentYear = new Date().getFullYear()
 
   const quickLinks = [
@@ -28,6 +30,14 @@ export function Footer() {
     { name: "Cookie Policy", href: "/cookies" },
     { name: "Disclaimer", href: "/disclaimer" },
   ]
+
+  const handleSocialClick = (platform: string) => {
+    toast({
+      title: "Coming Soon! 🚀",
+      description: `Our ${platform} page is launching soon. Stay tuned for updates!`,
+      duration: 3000,
+    })
+  }
 
   return (
     <footer className="bg-gray-50 dark:bg-[#1a1a1a] border-t border-gray-200 dark:border-[#3a3a3a] mt-16 transition-colors">
@@ -65,42 +75,50 @@ export function Footer() {
             </div>
 
             {/* Social Media */}
-            <div className="flex gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-white dark:bg-[#2a2a2a] hover:bg-[#7cb342] dark:hover:bg-[#7cb342] text-gray-600 dark:text-gray-400 hover:text-white w-10 h-10 p-0 border border-gray-200 dark:border-[#3a3a3a]"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-white dark:bg-[#2a2a2a] hover:bg-[#1da1f2] dark:hover:bg-[#1da1f2] text-gray-600 dark:text-gray-400 hover:text-white w-10 h-10 p-0 border border-gray-200 dark:border-[#3a3a3a]"
-              >
-                <Twitter className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-white dark:bg-[#2a2a2a] hover:bg-[#4267B2] dark:hover:bg-[#4267B2] text-gray-600 dark:text-gray-400 hover:text-white w-10 h-10 p-0 border border-gray-200 dark:border-[#3a3a3a]"
-              >
-                <Facebook className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-white dark:bg-[#2a2a2a] hover:bg-[#E4405F] dark:hover:bg-[#E4405F] text-gray-600 dark:text-gray-400 hover:text-white w-10 h-10 p-0 border border-gray-200 dark:border-[#3a3a3a]"
-              >
-                <Instagram className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-white dark:bg-[#2a2a2a] hover:bg-[#FF0000] dark:hover:bg-[#FF0000] text-gray-600 dark:text-gray-400 hover:text-white w-10 h-10 p-0 border border-gray-200 dark:border-[#3a3a3a]"
-              >
-                <Youtube className="h-4 w-4" />
-              </Button>
+            <div className="text-center">
+              <div className="text-gray-600 dark:text-gray-400 text-sm mb-2">Follow us on social media</div>
+              <div className="flex gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSocialClick("Telegram")}
+                  className="bg-white dark:bg-[#2a2a2a] hover:bg-[#7cb342] dark:hover:bg-[#7cb342] text-gray-600 dark:text-gray-400 hover:text-white w-10 h-10 p-0 border border-gray-200 dark:border-[#3a3a3a] transition-all duration-200"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSocialClick("Twitter")}
+                  className="bg-white dark:bg-[#2a2a2a] hover:bg-[#1da1f2] dark:hover:bg-[#1da1f2] text-gray-600 dark:text-gray-400 hover:text-white w-10 h-10 p-0 border border-gray-200 dark:border-[#3a3a3a] transition-all duration-200"
+                >
+                  <Twitter className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSocialClick("Facebook")}
+                  className="bg-white dark:bg-[#2a2a2a] hover:bg-[#4267B2] dark:hover:bg-[#4267B2] text-gray-600 dark:text-gray-400 hover:text-white w-10 h-10 p-0 border border-gray-200 dark:border-[#3a3a3a] transition-all duration-200"
+                >
+                  <Facebook className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSocialClick("Instagram")}
+                  className="bg-white dark:bg-[#2a2a2a] hover:bg-[#E4405F] dark:hover:bg-[#E4405F] text-gray-600 dark:text-gray-400 hover:text-white w-10 h-10 p-0 border border-gray-200 dark:border-[#3a3a3a] transition-all duration-200"
+                >
+                  <Instagram className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSocialClick("YouTube")}
+                  className="bg-white dark:bg-[#2a2a2a] hover:bg-[#FF0000] dark:hover:bg-[#FF0000] text-gray-600 dark:text-gray-400 hover:text-white w-10 h-10 p-0 border border-gray-200 dark:border-[#3a3a3a] transition-all duration-200"
+                >
+                  <Youtube className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 

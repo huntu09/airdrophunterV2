@@ -4,55 +4,54 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Eye, TrendingUp, Clock, Lightbulb, Rocket, Target, Gem } from "lucide-react"
 import { HeaderBannerAd, InContentAd, ResponsiveAd } from "@/components/adsense-ad"
+import { createServerClient } from "@/lib/supabase"
 
-export default function PotentialAirdropsPage() {
-  const potentialAirdrops = [
-    {
-      id: 1,
-      name: "Monad",
-      description: "High-performance blockchain with parallel execution and EVM compatibility",
-      stage: "Testnet",
-      potentialReward: "$500-2000",
-      confidence: 85,
-      timeToLaunch: "Q3 2024",
-      difficulty: "Medium",
-      tasks: ["Run testnet node", "Deploy contracts", "Provide feedback"],
-      logo: "/placeholder.svg?height=60&width=60",
-      category: "Layer 1",
-      funding: "$225M",
-      backers: ["Dragonfly", "Placeholder"],
-    },
-    {
-      id: 2,
-      name: "Berachain",
-      description: "EVM-compatible blockchain built on Proof-of-Liquidity consensus",
-      stage: "Testnet",
-      potentialReward: "$300-1500",
-      confidence: 90,
-      timeToLaunch: "Q2 2024",
-      difficulty: "Easy",
-      tasks: ["Use testnet faucet", "Swap tokens", "Provide liquidity"],
-      logo: "/placeholder.svg?height=60&width=60",
-      category: "Layer 1",
-      funding: "$142M",
-      backers: ["Polychain", "Hack VC"],
-    },
-    {
-      id: 3,
-      name: "Fuel Network",
-      description: "Fastest modular execution layer built for the Ethereum ecosystem",
-      stage: "Beta",
-      potentialReward: "$400-1800",
-      confidence: 80,
-      timeToLaunch: "Q4 2024",
-      difficulty: "Medium",
-      tasks: ["Bridge assets", "Use dApps", "Deploy contracts"],
-      logo: "/placeholder.svg?height=60&width=60",
-      category: "Layer 2",
-      funding: "$81M",
-      backers: ["Blockchain Capital", "Stratos"],
-    },
-  ]
+export default async function PotentialAirdropsPage() {
+  // Fetch real data from database
+  const supabase = createServerClient()
+  const { data: airdrops, error } = await supabase
+    .from("airdrops")
+    .select("*")
+    .in("status", ["testnet", "upcoming", "beta"])
+    .order("created_at", { ascending: false })
+    .limit(6)
+
+  // Fallback data if database is empty or error
+  const potentialAirdrops =
+    airdrops && airdrops.length > 0
+      ? airdrops.map((airdrop, index) => ({
+          id: airdrop.id,
+          name: airdrop.name,
+          description: airdrop.description,
+          stage: airdrop.status === "testnet" ? "Testnet" : airdrop.status === "beta" ? "Beta" : "Upcoming",
+          potentialReward: airdrop.potential_reward || "$300-1500",
+          confidence: Math.max(70, 95 - index * 5), // Calculate confidence based on position
+          timeToLaunch: airdrop.expected_launch || "Q3 2024",
+          difficulty: airdrop.difficulty || "Medium",
+          tasks: airdrop.tasks ? JSON.parse(airdrop.tasks) : ["Use testnet", "Provide feedback"],
+          logo: airdrop.logo_url || "/placeholder.svg?height=60&width=60",
+          category: airdrop.category || "Layer 1",
+          funding: airdrop.funding || "TBA",
+          backers: airdrop.backers ? JSON.parse(airdrop.backers) : ["VC Fund"],
+        }))
+      : [
+          // Fallback data when database is empty
+          {
+            id: 1,
+            name: "Monad",
+            description: "High-performance blockchain with parallel execution and EVM compatibility",
+            stage: "Testnet",
+            potentialReward: "$500-2000",
+            confidence: 85,
+            timeToLaunch: "Q3 2024",
+            difficulty: "Medium",
+            tasks: ["Run testnet node", "Deploy contracts", "Provide feedback"],
+            logo: "/placeholder.svg?height=60&width=60",
+            category: "Layer 1",
+            funding: "$225M",
+            backers: ["Dragonfly", "Placeholder"],
+          },
+        ]
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 85) return "bg-green-500"

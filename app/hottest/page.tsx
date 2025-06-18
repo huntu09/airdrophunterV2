@@ -4,52 +4,54 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Flame, Users, Clock, TrendingUp, Star, Zap, Target, Award } from "lucide-react"
 import { HeaderBannerAd, InContentAd, ResponsiveAd } from "@/components/adsense-ad"
+import { createServerClient } from "@/lib/supabase"
 
-export default function HottestAirdropsPage() {
-  const hottestAirdrops = [
-    {
-      id: 1,
-      name: "Blast",
-      description: "The only Ethereum L2 with native yield for ETH and stablecoins",
-      reward: "$BLAST Token",
-      totalReward: "$2.3B",
-      participants: "3.2M+",
-      timeLeft: "5 days",
-      heatScore: 98,
-      trending: "+45%",
-      logo: "/placeholder.svg?height=60&width=60",
-      tags: ["Layer 2", "DeFi", "Yield"],
-      featured: true,
-    },
-    {
-      id: 2,
-      name: "Eigenlayer",
-      description: "Restaking protocol that extends Ethereum's security to other protocols",
-      reward: "$EIGEN Token",
-      totalReward: "$1.8B",
-      participants: "2.8M+",
-      timeLeft: "12 days",
-      heatScore: 95,
-      trending: "+38%",
-      logo: "/placeholder.svg?height=60&width=60",
-      tags: ["Restaking", "Infrastructure", "Security"],
-      featured: true,
-    },
-    {
-      id: 3,
-      name: "Wormhole",
-      description: "Leading interoperability protocol connecting multiple blockchains",
-      reward: "$W Token",
-      totalReward: "$1.2B",
-      participants: "1.9M+",
-      timeLeft: "8 days",
-      heatScore: 92,
-      trending: "+29%",
-      logo: "/placeholder.svg?height=60&width=60",
-      tags: ["Bridge", "Interoperability", "Multi-chain"],
-      featured: false,
-    },
-  ]
+export default async function HottestAirdropsPage() {
+  // Fetch real data from database
+  const supabase = createServerClient()
+  const { data: airdrops, error } = await supabase
+    .from("airdrops")
+    .select("*")
+    .eq("status", "active")
+    .order("participants", { ascending: false })
+    .limit(6)
+
+  // Fallback data if database is empty or error
+  const hottestAirdrops =
+    airdrops && airdrops.length > 0
+      ? airdrops.map((airdrop, index) => ({
+          id: airdrop.id,
+          name: airdrop.name,
+          description: airdrop.description,
+          reward: airdrop.reward_token || "TBA",
+          totalReward: airdrop.total_reward || "TBA",
+          participants: airdrop.participants || "TBA",
+          timeLeft: airdrop.end_date
+            ? `${Math.ceil((new Date(airdrop.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days`
+            : "TBA",
+          heatScore: Math.max(70, 100 - index * 3), // Calculate heat score based on position
+          trending: `+${Math.max(10, 50 - index * 5)}%`, // Calculate trending based on position
+          logo: airdrop.logo_url || "/placeholder.svg?height=60&width=60",
+          tags: airdrop.tags ? JSON.parse(airdrop.tags) : ["DeFi"],
+          featured: index < 2, // First 2 are featured
+        }))
+      : [
+          // Fallback data when database is empty
+          {
+            id: 1,
+            name: "Blast",
+            description: "The only Ethereum L2 with native yield for ETH and stablecoins",
+            reward: "$BLAST Token",
+            totalReward: "$2.3B",
+            participants: "3.2M+",
+            timeLeft: "5 days",
+            heatScore: 98,
+            trending: "+45%",
+            logo: "/placeholder.svg?height=60&width=60",
+            tags: ["Layer 2", "DeFi", "Yield"],
+            featured: true,
+          },
+        ]
 
   const getHeatColor = (score: number) => {
     if (score >= 95) return "from-red-500 to-orange-500"

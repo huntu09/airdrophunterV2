@@ -4,49 +4,50 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Clock, TrendingUp, Users, Gift, ExternalLink, Star, Zap } from "lucide-react"
 import { HeaderBannerAd, InContentAd, ResponsiveAd } from "@/components/adsense-ad"
+import { createServerClient } from "@/lib/supabase"
 
-export default function LatestAirdropsPage() {
-  const latestAirdrops = [
-    {
-      id: 1,
-      name: "LayerZero",
-      description: "Omnichain interoperability protocol enabling seamless cross-chain transactions",
-      reward: "$ZRO Token",
-      endDate: "2024-07-15",
-      participants: "2.5M+",
-      difficulty: "Medium",
-      tasks: ["Bridge assets", "Use dApps", "Hold for 30 days"],
-      logo: "/placeholder.svg?height=60&width=60",
-      network: "Multi-chain",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "zkSync Era",
-      description: "Layer 2 scaling solution for Ethereum with zero-knowledge proofs",
-      reward: "$ZK Token",
-      endDate: "2024-06-30",
-      participants: "1.8M+",
-      difficulty: "Easy",
-      tasks: ["Make transactions", "Use DEX", "Bridge ETH"],
-      logo: "/placeholder.svg?height=60&width=60",
-      network: "Ethereum L2",
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "Scroll",
-      description: "zkEVM-based zkRollup on Ethereum for native compatibility",
-      reward: "$SCR Token",
-      endDate: "2024-08-01",
-      participants: "900K+",
-      difficulty: "Easy",
-      tasks: ["Bridge assets", "Swap tokens", "Provide liquidity"],
-      logo: "/placeholder.svg?height=60&width=60",
-      network: "Ethereum L2",
-      status: "Active",
-    },
-  ]
+export default async function LatestAirdropsPage() {
+  // Fetch real data from database
+  const supabase = createServerClient()
+  const { data: airdrops, error } = await supabase
+    .from("airdrops")
+    .select("*")
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(6)
+
+  // Fallback data if database is empty or error
+  const latestAirdrops =
+    airdrops && airdrops.length > 0
+      ? airdrops.map((airdrop) => ({
+          id: airdrop.id,
+          name: airdrop.name,
+          description: airdrop.description,
+          reward: airdrop.reward_token || "TBA",
+          endDate: airdrop.end_date ? new Date(airdrop.end_date).toLocaleDateString() : "TBA",
+          participants: airdrop.participants || "TBA",
+          difficulty: airdrop.difficulty || "Medium",
+          tasks: airdrop.tasks ? JSON.parse(airdrop.tasks) : ["Check official website"],
+          logo: airdrop.logo_url || "/placeholder.svg?height=60&width=60",
+          network: airdrop.network || "Multi-chain",
+          status: airdrop.status,
+        }))
+      : [
+          // Fallback data when database is empty
+          {
+            id: 1,
+            name: "LayerZero",
+            description: "Omnichain interoperability protocol enabling seamless cross-chain transactions",
+            reward: "$ZRO Token",
+            endDate: "2024-07-15",
+            participants: "2.5M+",
+            difficulty: "Medium",
+            tasks: ["Bridge assets", "Use dApps", "Hold for 30 days"],
+            logo: "/placeholder.svg?height=60&width=60",
+            network: "Multi-chain",
+            status: "Active",
+          },
+        ]
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
