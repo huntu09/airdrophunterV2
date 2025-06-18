@@ -7,19 +7,111 @@ import { HeaderBannerAd, InContentAd, ResponsiveAd } from "@/components/adsense-
 import { createServerClient } from "@/lib/supabase"
 
 export default async function LatestAirdropsPage() {
-  // Fetch real data from database
-  const supabase = createServerClient()
-  const { data: airdrops, error } = await supabase
-    .from("airdrops")
-    .select("*")
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(6)
+  // Fallback data jika database tidak tersedia
+  const fallbackAirdrops = [
+    {
+      id: 1,
+      name: "LayerZero",
+      description: "Omnichain interoperability protocol enabling seamless cross-chain transactions",
+      reward: "$ZRO Token",
+      endDate: "2024-07-15",
+      participants: "2.5M+",
+      difficulty: "Medium",
+      tasks: ["Bridge assets", "Use dApps", "Hold for 30 days"],
+      logo: "/placeholder.svg?height=60&width=60",
+      network: "Multi-chain",
+      status: "Active",
+    },
+    {
+      id: 2,
+      name: "zkSync Era",
+      description: "Ethereum's leading zkEVM Layer 2 with confirmed token launch",
+      reward: "$ZK Token",
+      endDate: "2024-08-01",
+      participants: "2.1M+",
+      difficulty: "Easy",
+      tasks: ["Bridge ETH", "Swap tokens", "Use dApps"],
+      logo: "/placeholder.svg?height=60&width=60",
+      network: "Ethereum L2",
+      status: "Active",
+    },
+    {
+      id: 3,
+      name: "Scroll",
+      description: "Native zkEVM Layer 2 for Ethereum with growing ecosystem",
+      reward: "$SCR Token",
+      endDate: "2024-08-15",
+      participants: "1.5M+",
+      difficulty: "Medium",
+      tasks: ["Bridge assets", "Deploy contracts", "Use ecosystem"],
+      logo: "/placeholder.svg?height=60&width=60",
+      network: "zkEVM",
+      status: "Active",
+    },
+    {
+      id: 4,
+      name: "Linea",
+      description: "ConsenSys zkEVM Layer 2 with MetaMask integration",
+      reward: "$LINEA Token",
+      endDate: "2024-09-01",
+      participants: "1.2M+",
+      difficulty: "Easy",
+      tasks: ["Use MetaMask", "Bridge tokens", "Explore dApps"],
+      logo: "/placeholder.svg?height=60&width=60",
+      network: "zkEVM",
+      status: "Active",
+    },
+    {
+      id: 5,
+      name: "Base",
+      description: "Coinbase's Ethereum Layer 2 with massive ecosystem growth",
+      reward: "$BASE Token",
+      endDate: "2024-09-15",
+      participants: "900K+",
+      difficulty: "Easy",
+      tasks: ["Bridge from Coinbase", "Use Base dApps", "Provide liquidity"],
+      logo: "/placeholder.svg?height=60&width=60",
+      network: "Layer 2",
+      status: "Active",
+    },
+    {
+      id: 6,
+      name: "Arbitrum Orbit",
+      description: "Next-generation Layer 3 solutions built on Arbitrum",
+      reward: "$ORBIT Token",
+      endDate: "2024-10-01",
+      participants: "800K+",
+      difficulty: "Hard",
+      tasks: ["Deploy L3 chain", "Use advanced features", "Provide feedback"],
+      logo: "/placeholder.svg?height=60&width=60",
+      network: "Layer 3",
+      status: "Active",
+    },
+  ]
 
-  // Fallback data if database is empty or error
-  const latestAirdrops =
-    airdrops && airdrops.length > 0
-      ? airdrops.map((airdrop) => ({
+  let latestAirdrops = fallbackAirdrops
+  let dataSource = "fallback"
+
+  // Safely try to fetch from database
+  try {
+    const supabase = createServerClient()
+
+    // Only attempt database query if supabase client is available
+    if (supabase) {
+      console.log("🗄️ Attempting to fetch latest airdrops from database...")
+
+      const { data: dbAirdrops, error } = await supabase
+        .from("airdrops")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(6)
+
+      // If successful and has data, use database data
+      if (!error && dbAirdrops && dbAirdrops.length > 0) {
+        console.log(`✅ Successfully fetched ${dbAirdrops.length} latest airdrops from database`)
+
+        latestAirdrops = dbAirdrops.map((airdrop) => ({
           id: airdrop.id,
           name: airdrop.name,
           description: airdrop.description,
@@ -32,22 +124,22 @@ export default async function LatestAirdropsPage() {
           network: airdrop.network || "Multi-chain",
           status: airdrop.status,
         }))
-      : [
-          // Fallback data when database is empty
-          {
-            id: 1,
-            name: "LayerZero",
-            description: "Omnichain interoperability protocol enabling seamless cross-chain transactions",
-            reward: "$ZRO Token",
-            endDate: "2024-07-15",
-            participants: "2.5M+",
-            difficulty: "Medium",
-            tasks: ["Bridge assets", "Use dApps", "Hold for 30 days"],
-            logo: "/placeholder.svg?height=60&width=60",
-            network: "Multi-chain",
-            status: "Active",
-          },
-        ]
+
+        dataSource = "database"
+      } else {
+        console.log("⚠️ Database query returned no results, using fallback data")
+        if (error) {
+          console.error("Database error:", error.message)
+        }
+      }
+    } else {
+      console.log("⚠️ Supabase client not available, using fallback data")
+    }
+  } catch (error: any) {
+    console.error("💥 Error fetching latest airdrops from database:", error.message)
+    console.log("🚨 Using fallback data due to database error")
+    // latestAirdrops already set to fallbackAirdrops
+  }
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -63,17 +155,19 @@ export default async function LatestAirdropsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] py-4 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-[#7cb342] to-[#689f38] rounded-xl flex items-center justify-center">
-              <Zap className="h-6 w-6 text-white" />
+        <div className="text-center mb-8 sm:mb-12">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-[#7cb342] to-[#689f38] rounded-xl flex items-center justify-center">
+              <Zap className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Latest Airdrops</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+              Latest Airdrops
+            </h1>
           </div>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
             Discover the newest and most promising airdrops. Get early access to potential gems before they go
             mainstream.
           </p>
@@ -95,6 +189,13 @@ export default async function LatestAirdropsPage() {
               <div className="text-2xl font-bold text-gray-900 dark:text-white">$2B+</div>
               <div className="text-gray-600 dark:text-gray-400 text-sm">Total Rewards</div>
             </div>
+          </div>
+
+          {/* Data source indicator */}
+          <div className="mt-4">
+            <Badge variant="outline" className="text-xs">
+              Data source: {dataSource}
+            </Badge>
           </div>
         </div>
 

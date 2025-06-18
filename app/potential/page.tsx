@@ -7,25 +7,129 @@ import { HeaderBannerAd, InContentAd, ResponsiveAd } from "@/components/adsense-
 import { createServerClient } from "@/lib/supabase"
 
 export default async function PotentialAirdropsPage() {
-  // Fetch real data from database
-  const supabase = createServerClient()
-  const { data: airdrops, error } = await supabase
-    .from("airdrops")
-    .select("*")
-    .in("status", ["testnet", "upcoming", "beta"])
-    .order("created_at", { ascending: false })
-    .limit(6)
+  // Fallback data jika database tidak tersedia
+  const fallbackAirdrops = [
+    {
+      id: 1,
+      name: "Monad",
+      description: "High-performance blockchain with parallel execution and EVM compatibility",
+      stage: "Testnet",
+      potentialReward: "$500-2000",
+      confidence: 85,
+      timeToLaunch: "Q3 2024",
+      difficulty: "Medium",
+      tasks: ["Run testnet node", "Deploy contracts", "Provide feedback"],
+      logo: "/placeholder.svg?height=60&width=60",
+      category: "Layer 1",
+      funding: "$225M",
+      backers: ["Dragonfly", "Placeholder"],
+    },
+    {
+      id: 2,
+      name: "Berachain",
+      description: "Liquidity proof-of-stake blockchain with innovative consensus mechanism",
+      stage: "Testnet",
+      potentialReward: "$400-1800",
+      confidence: 82,
+      timeToLaunch: "Q4 2024",
+      difficulty: "Medium",
+      tasks: ["Validate transactions", "Provide liquidity", "Test features"],
+      logo: "/placeholder.svg?height=60&width=60",
+      category: "Layer 1",
+      funding: "$142M",
+      backers: ["Polychain", "Hack VC"],
+    },
+    {
+      id: 3,
+      name: "Fuel Network",
+      description: "Modular execution layer designed for Ethereum with UTXO model",
+      stage: "Beta",
+      potentialReward: "$300-1500",
+      confidence: 78,
+      timeToLaunch: "Q1 2025",
+      difficulty: "Hard",
+      tasks: ["Deploy smart contracts", "Use Fuel VM", "Build applications"],
+      logo: "/placeholder.svg?height=60&width=60",
+      category: "Modular",
+      funding: "$81M",
+      backers: ["Blockchain Capital", "Stratos"],
+    },
+    {
+      id: 4,
+      name: "Celestia",
+      description: "Modular blockchain network for data availability and consensus",
+      stage: "Upcoming",
+      potentialReward: "$200-1200",
+      confidence: 75,
+      timeToLaunch: "Q2 2025",
+      difficulty: "Medium",
+      tasks: ["Run light node", "Submit data", "Validate blocks"],
+      logo: "/placeholder.svg?height=60&width=60",
+      category: "Data Availability",
+      funding: "$55M",
+      backers: ["Bain Capital", "Polychain"],
+    },
+    {
+      id: 5,
+      name: "Sei Network",
+      description: "Sector-specific Layer 1 blockchain optimized for trading",
+      stage: "Testnet",
+      potentialReward: "$250-1000",
+      confidence: 72,
+      timeToLaunch: "Q3 2025",
+      difficulty: "Easy",
+      tasks: ["Trade on testnet", "Provide liquidity", "Use DEX features"],
+      logo: "/placeholder.svg?height=60&width=60",
+      category: "DeFi",
+      funding: "$30M",
+      backers: ["Multicoin", "Coinbase Ventures"],
+    },
+    {
+      id: 6,
+      name: "Aptos",
+      description: "Layer 1 blockchain focused on safety and scalability with Move language",
+      stage: "Beta",
+      potentialReward: "$150-800",
+      confidence: 70,
+      timeToLaunch: "Q4 2025",
+      difficulty: "Medium",
+      tasks: ["Use Move language", "Deploy dApps", "Test network"],
+      logo: "/placeholder.svg?height=60&width=60",
+      category: "Layer 1",
+      funding: "$350M",
+      backers: ["a16z", "Tiger Global"],
+    },
+  ]
 
-  // Fallback data if database is empty or error
-  const potentialAirdrops =
-    airdrops && airdrops.length > 0
-      ? airdrops.map((airdrop, index) => ({
+  let potentialAirdrops = fallbackAirdrops
+  let dataSource = "fallback"
+
+  // Safely try to fetch from database
+  try {
+    const supabase = createServerClient()
+
+    // Only attempt database query if supabase client is available
+    if (supabase) {
+      console.log("🗄️ Attempting to fetch potential airdrops from database...")
+
+      const { data: dbAirdrops, error } = await supabase
+        .from("airdrops")
+        .select("*")
+        .in("status", ["testnet", "upcoming", "beta"])
+        .order("created_at", { ascending: false })
+        .limit(6)
+
+      // If successful and has data, use database data
+      if (!error && dbAirdrops && dbAirdrops.length > 0) {
+        console.log(`✅ Successfully fetched ${dbAirdrops.length} potential airdrops from database`)
+
+        potentialAirdrops = dbAirdrops.map((airdrop, index) => ({
           id: airdrop.id,
           name: airdrop.name,
           description: airdrop.description,
           stage: airdrop.status === "testnet" ? "Testnet" : airdrop.status === "beta" ? "Beta" : "Upcoming",
           potentialReward: airdrop.potential_reward || "$300-1500",
-          confidence: Math.max(70, 95 - index * 5), // Calculate confidence based on position
+          confidence: Math.max(70, 95 - index * 5),
           timeToLaunch: airdrop.expected_launch || "Q3 2024",
           difficulty: airdrop.difficulty || "Medium",
           tasks: airdrop.tasks ? JSON.parse(airdrop.tasks) : ["Use testnet", "Provide feedback"],
@@ -34,24 +138,22 @@ export default async function PotentialAirdropsPage() {
           funding: airdrop.funding || "TBA",
           backers: airdrop.backers ? JSON.parse(airdrop.backers) : ["VC Fund"],
         }))
-      : [
-          // Fallback data when database is empty
-          {
-            id: 1,
-            name: "Monad",
-            description: "High-performance blockchain with parallel execution and EVM compatibility",
-            stage: "Testnet",
-            potentialReward: "$500-2000",
-            confidence: 85,
-            timeToLaunch: "Q3 2024",
-            difficulty: "Medium",
-            tasks: ["Run testnet node", "Deploy contracts", "Provide feedback"],
-            logo: "/placeholder.svg?height=60&width=60",
-            category: "Layer 1",
-            funding: "$225M",
-            backers: ["Dragonfly", "Placeholder"],
-          },
-        ]
+
+        dataSource = "database"
+      } else {
+        console.log("⚠️ Database query returned no results, using fallback data")
+        if (error) {
+          console.error("Database error:", error.message)
+        }
+      }
+    } else {
+      console.log("⚠️ Supabase client not available, using fallback data")
+    }
+  } catch (error: any) {
+    console.error("💥 Error fetching potential airdrops from database:", error.message)
+    console.log("🚨 Using fallback data due to database error")
+    // potentialAirdrops already set to fallbackAirdrops
+  }
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 85) return "bg-green-500"
@@ -73,28 +175,36 @@ export default async function PotentialAirdropsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] py-4 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <Eye className="h-6 w-6 text-white" />
+        <div className="text-center mb-8 sm:mb-12">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+              <Eye className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Potential Airdrops</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
+              Potential Airdrops
+            </h1>
           </div>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
             Early-stage projects with high airdrop potential. Get in early before the crowd discovers them!
           </p>
+          {/* Data source indicator */}
+          <div className="mt-4">
+            <Badge variant="outline" className="text-xs">
+              Data source: {dataSource}
+            </Badge>
+          </div>
         </div>
 
         {/* Alpha Alert */}
-        <div className="mb-12">
+        <div className="mb-8 sm:mb-12">
           <Card className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <Lightbulb className="h-6 w-6 text-white" />
+                <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <Lightbulb className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
