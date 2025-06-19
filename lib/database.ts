@@ -346,3 +346,120 @@ export async function getAnalytics() {
     }
   }
 }
+
+// Rating System Functions
+export async function submitRating(airdropId: string, userIp: string, rating: number, userAgent?: string) {
+  try {
+    const client = getDatabaseClient()
+
+    // Validate rating
+    if (rating < 1 || rating > 5) {
+      throw new Error("Rating must be between 1 and 5")
+    }
+
+    // Insert or update rating
+    const { data, error } = await client
+      .from("user_ratings")
+      .upsert({
+        airdrop_id: airdropId,
+        user_ip: userIp,
+        rating: rating,
+        user_agent: userAgent,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Database error:", error)
+      throw new Error(`Failed to submit rating: ${error.message}`)
+    }
+
+    return data
+  } catch (error) {
+    console.error("submitRating error:", error)
+    throw error
+  }
+}
+
+export async function getUserRating(airdropId: string, userIp: string) {
+  try {
+    const client = getDatabaseClient()
+    const { data, error } = await client
+      .from("user_ratings")
+      .select("rating, created_at, updated_at")
+      .eq("airdrop_id", airdropId)
+      .eq("user_ip", userIp)
+      .single()
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return null // No rating found
+      }
+      console.error("Database error:", error)
+      throw new Error(`Failed to get user rating: ${error.message}`)
+    }
+
+    return data
+  } catch (error) {
+    console.error("getUserRating error:", error)
+    throw error
+  }
+}
+
+export async function getAirdropRatingStats(airdropId: string) {
+  try {
+    const client = getDatabaseClient()
+
+    // Get rating distribution
+    const { data: distribution, error: distError } = await client
+      .from("user_ratings")
+      .select("rating")
+      .eq("airdrop_id", airdropId)
+
+    if (distError) {
+      console.error("Database error:", distError)
+      throw new Error(`Failed to get rating distribution: ${distError.message}`)
+    }
+
+    // Calculate distribution
+    const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    distribution?.forEach((item) => {
+      ratingCounts[item.rating as keyof typeof ratingCounts]++
+    })
+
+    const totalRatings = distribution?.length || 0
+    const averageRating = totalRatings > 0 ? distribution.reduce((sum, item) => sum + item.rating, 0) / totalRatings : 0
+
+    return {
+      averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
+      totalRatings,
+      distribution: ratingCounts,
+    }
+  } catch (error) {
+    console.error("getAirdropRatingStats error:", error)
+    throw error
+  }
+}
+
+export async function getRatingHistory(airdropId: string, limit = 10) {
+  try {
+    const client = getDatabaseClient()
+    const { data, error } = await client
+      .from("user_ratings")
+      .select("rating, created_at, updated_at")
+      .eq("airdrop_id", airdropId)
+      .order("created_at", { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error("Database error:", error)
+      throw new Error(`Failed to get rating history: ${error.message}`)
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("getRatingHistory error:", error)
+    throw error
+  }
+}

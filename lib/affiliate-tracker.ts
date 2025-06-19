@@ -1,71 +1,46 @@
-// 🎯 Affiliate Click Tracking & Analytics
-import { event } from "./analytics"
-
-export interface AffiliateClick {
-  platform: string
-  timestamp: number
-  userAgent: string
-  referrer: string
-  sessionId: string
+// 🔐 VALIDATE AFFILIATE TRACKING CONFIGURATION
+const isAffiliateTrackingEnabled = () => {
+  return process.env.NEXT_PUBLIC_AFFILIATE_TRACKING_ENABLED === "true"
 }
 
-export const trackAffiliateClick = (platform: string, url: string) => {
-  try {
-    // 📊 Google Analytics Event
-    event({
-      action: "affiliate_click",
-      category: "monetization",
-      label: platform,
-      value: 1,
-    })
+const isConversionTrackingEnabled = () => {
+  return process.env.NEXT_PUBLIC_AFFILIATE_CONVERSION_TRACKING === "true"
+}
 
-    // 💾 Local Storage for Conversion Tracking
-    const clickData: AffiliateClick = {
-      platform,
-      timestamp: Date.now(),
-      userAgent: navigator.userAgent,
-      referrer: document.referrer,
-      sessionId: generateSessionId(),
-    }
-
-    // Store click data
-    const existingClicks = JSON.parse(localStorage.getItem("affiliate_clicks") || "[]")
-    existingClicks.push(clickData)
-    localStorage.setItem("affiliate_clicks", JSON.stringify(existingClicks))
-
-    // 🔔 Console log for debugging
-    console.log(`🎯 Affiliate Click Tracked: ${platform}`, clickData)
-
-    // 🚀 Open affiliate link
+export const trackAffiliateClick = (affiliateName: string, url: string) => {
+  if (!isAffiliateTrackingEnabled()) {
+    console.log("🔇 Affiliate tracking disabled")
     window.open(url, "_blank", "noopener,noreferrer")
-
-    return true
-  } catch (error) {
-    console.error("❌ Affiliate tracking failed:", error)
-    // Fallback: still open the link
-    window.open(url, "_blank", "noopener,noreferrer")
-    return false
+    return
   }
+
+  // Log the affiliate click event (example using Google Analytics)
+  if (typeof window !== "undefined" && window.gtag) {
+    window.gtag("event", "affiliate_click", {
+      affiliate_name: affiliateName,
+      affiliate_url: url,
+    })
+  } else {
+    console.log("Google Analytics not found. Affiliate click not tracked.")
+  }
+
+  // Open the affiliate link in a new tab/window
+  window.open(url, "_blank", "noopener,noreferrer")
 }
 
-export const generateSessionId = (): string => {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-}
+export const trackAffiliateConversion = (affiliateName: string, conversionValue: number) => {
+  if (!isConversionTrackingEnabled()) {
+    console.log("🔕 Affiliate conversion tracking disabled")
+    return
+  }
 
-export const getAffiliateStats = () => {
-  try {
-    const clicks = JSON.parse(localStorage.getItem("affiliate_clicks") || "[]")
-    const stats = clicks.reduce((acc: any, click: AffiliateClick) => {
-      acc[click.platform] = (acc[click.platform] || 0) + 1
-      return acc
-    }, {})
-
-    return {
-      totalClicks: clicks.length,
-      platformStats: stats,
-      recentClicks: clicks.slice(-10), // Last 10 clicks
-    }
-  } catch {
-    return { totalClicks: 0, platformStats: {}, recentClicks: [] }
+  if (typeof window !== "undefined" && window.gtag) {
+    window.gtag("event", "conversion", {
+      affiliate_name: affiliateName,
+      conversion_value: conversionValue,
+      currency: "USD", // Replace with your currency if needed
+    })
+  } else {
+    console.log("Google Analytics not found. Affiliate conversion not tracked.")
   }
 }

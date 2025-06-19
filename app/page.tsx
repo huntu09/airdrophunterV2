@@ -14,50 +14,33 @@ import { useAirdropsCache } from "@/hooks/use-airdrops-cache"
 import { HeaderBannerAd, InContentAd, ResponsiveAd } from "@/components/adsense-ad"
 import { LoadMoreDisclaimer } from "@/components/compliance-disclaimer"
 import { MarketTicker } from "@/components/market-ticker"
+import { getAffiliateConfig, debugAffiliateConfig } from "@/lib/affiliate-config"
+import React from "react"
 
 function AffiliateBannerCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
 
-  // 🎯 REAL AFFILIATE DATA WITH WORKING LINKS
-  const affiliateBanners = [
-    {
-      id: 1,
-      name: "Binance",
-      title: "World's #1 Crypto Exchange",
-      subtitle: "Trade 350+ coins with lowest fees",
-      bonus: "$100",
-      bonusDetails: "Welcome Bonus",
-      cta: "Claim $100 Bonus",
-      bgColor: "bg-gradient-to-r from-yellow-500 to-orange-500",
-      textColor: "text-white",
-      logo: "₿",
-      features: ["0% Fees", "24/7 Support", "Secure Trading"],
-      // 🔥 REPLACE WITH YOUR ACTUAL BINANCE REFERRAL LINK
-      url: "https://accounts.binance.com/register?ref=YOUR_BINANCE_REF_CODE",
-      urgency: "Limited Time",
-      socialProof: "10M+ Users",
-      trustBadge: "🛡️ Secure",
-    },
-    {
-      id: 2,
-      name: "OKX",
-      title: "Advanced Trading Platform",
-      subtitle: "Professional tools & copy trading",
-      bonus: "$50",
-      bonusDetails: "New User Bonus",
-      cta: "Get $50 Bonus",
-      bgColor: "bg-gradient-to-r from-blue-600 to-cyan-500",
-      textColor: "text-white",
-      logo: "◯",
-      features: ["Copy Trading", "Web3 Wallet", "DeFi Earn"],
-      // 🔥 REPLACE WITH YOUR ACTUAL OKX REFERRAL LINK
-      url: "https://www.okx.com/join/YOUR_OKX_REF_CODE",
-      urgency: "Today Only",
-      socialProof: "20M+ Traders",
-      trustBadge: "⭐ 4.8/5",
-    },
-  ]
+  // 🎯 GET AFFILIATE CONFIG FROM ENVIRONMENT VARIABLES
+  const affiliateBanners = getAffiliateConfig()
+
+  // 🔍 DEBUG IN DEVELOPMENT
+  React.useEffect(() => {
+    debugAffiliateConfig()
+  }, [])
+
+  // 🚨 FALLBACK: If no affiliates configured, show message
+  if (affiliateBanners.length === 0) {
+    return (
+      <div className="bg-gray-100 dark:bg-[#2a2a2a] rounded-xl p-6 text-center">
+        <div className="text-4xl mb-2">⚙️</div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Affiliate Configuration Required</h3>
+        <p className="text-gray-600 dark:text-gray-400 text-sm">
+          Please configure affiliate referral codes in your environment variables.
+        </p>
+      </div>
+    )
+  }
 
   // 🎯 ENHANCED CLICK HANDLER WITH TRACKING
   const handleAffiliateClick = (banner: (typeof affiliateBanners)[0]) => {

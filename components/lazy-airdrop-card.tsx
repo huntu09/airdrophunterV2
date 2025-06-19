@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { OptimizedImage } from "@/components/optimized-image"
 import { useLazyLoading } from "@/hooks/use-lazy-loading"
 import {
-  Star,
   Flame,
   BookOpen,
   Zap,
@@ -28,6 +27,7 @@ import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import type { JSX } from "react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { InteractiveStarRating } from "@/components/interactive-star-rating"
 
 interface Airdrop {
   id: string
@@ -366,11 +366,13 @@ export function LazyAirdropCard({ airdrop, index }: LazyAirdropCardProps) {
             <div className="mt-3 pt-4 border-t border-gray-200 dark:border-[#3a3a3a]">
               <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-gray-900 dark:text-white font-medium">{airdrop.rating}</span>
-                    <span className="text-gray-600 dark:text-gray-400">({airdrop.totalRatings})</span>
-                  </div>
+                  <InteractiveStarRating
+                    airdropId={airdrop.id}
+                    initialRating={airdrop.rating}
+                    totalRatings={airdrop.totalRatings}
+                    size="sm"
+                    showStats={true}
+                  />
                   <div className="text-gray-600 dark:text-gray-400">
                     Reward:{" "}
                     <span className={cn("font-medium", getRewardColor(airdrop.category))}>{airdrop.reward}</span>
