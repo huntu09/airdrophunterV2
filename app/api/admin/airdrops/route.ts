@@ -1,83 +1,87 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAirdrops, createAirdrop, getAirdropStats, bulkUpdateAirdrops, bulkDeleteAirdrops } from "@/lib/database"
+import { getAirdrops, createAirdrop, bulkUpdateAirdrops, bulkDeleteAirdrops } from "@/lib/database"
+import { isSupabaseConfigured } from "@/lib/supabase"
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if database is configured
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Database not configured",
+          message: "Please configure Supabase environment variables",
+        },
+        { status: 503 },
+      )
+    }
+
     const { searchParams } = new URL(request.url)
+    const page = Number.parseInt(searchParams.get("page") || "1")
+    const limit = Number.parseInt(searchParams.get("limit") || "20")
     const search = searchParams.get("search") || ""
     const category = searchParams.get("category") || "all"
     const status = searchParams.get("status") || "all"
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "50")
-    const offset = (page - 1) * limit
 
-    console.log("🔍 API GET AUDIT - Fetching airdrops with filters:", { search, category, status, page, limit })
+    console.log("🔍 API Request params:", { page, limit, search, category, status })
 
-    // Get airdrops from Supabase
-    const { airdrops, total } = await getAirdrops({
-      search,
-      category,
-      status,
+    const result = await getAirdrops({
+      page,
       limit,
-      offset,
+      search: search || undefined,
+      category: category === "all" ? undefined : category,
+      status: status === "all" ? undefined : status,
     })
 
-    // Get stats
-    const stats = await getAirdropStats()
+    // Calculate stats
+    const stats = {
+      total: result.total,
+      active: result.airdrops.filter((a) => a.status === "active").length,
+      confirmed: result.airdrops.filter((a) => a.is_confirmed).length,
+      hot: result.airdrops.filter((a) => a.is_hot).length,
+      latest: result.airdrops.filter((a) => a.category === "latest").length,
+      hottest: result.airdrops.filter((a) => a.category === "hottest").length,
+      potential: result.airdrops.filter((a) => a.category === "potential").length,
+    }
 
-    // 🔍 AUDIT: Transform data and log logo information
-    const transformedAirdrops = airdrops.map((airdrop: any) => {
-      const transformed = {
-        id: airdrop.id.toString(),
-        name: airdrop.name,
-        logo: airdrop.logo,
-        description: airdrop.description,
-        action: airdrop.action,
-        category: airdrop.category,
-        rating: Number.parseFloat(airdrop.rating || 0),
-        totalRatings: airdrop.total_ratings || 0,
-        status: airdrop.status,
-        reward: airdrop.reward,
-        startDate: airdrop.start_date,
-        difficulty: airdrop.difficulty,
-        socialLinks: airdrop.social_links || {},
-        steps: airdrop.steps || [],
-        requirements: airdrop.requirements || [],
-        isHot: airdrop.is_hot || false,
-        isConfirmed: airdrop.is_confirmed || false,
-        participants: airdrop.participants || 0,
-        createdAt: airdrop.created_at,
-        updatedAt: airdrop.updated_at,
-        networks: airdrop.networks || [], // Include networks
-      }
-
-      // 🔍 AUDIT: Log logo transformation
-      if (airdrop.logo) {
-        console.log("🔍 API TRANSFORM AUDIT - Logo data:", {
-          name: airdrop.name,
-          originalLogo: airdrop.logo,
-          transformedLogo: transformed.logo,
-        })
-      }
-
-      return transformed
-    })
-
-    console.log("🔍 API GET AUDIT - Returning", transformedAirdrops.length, "airdrops")
+    // Transform data to match frontend format
+    const transformedAirdrops = result.airdrops.map((airdrop) => ({
+      id: airdrop.id.toString(),
+      name: airdrop.name,
+      logo: airdrop.logo,
+      description: airdrop.description,
+      action: airdrop.action,
+      category: airdrop.category,
+      rating: Number.parseFloat(airdrop.rating || "0"),
+      totalRatings: airdrop.total_ratings || 0,
+      status: airdrop.status,
+      reward: airdrop.reward,
+      startDate: airdrop.start_date,
+      difficulty: airdrop.difficulty,
+      socialLinks: airdrop.social_links || {},
+      steps: airdrop.steps || [],
+      requirements: airdrop.requirements || [],
+      isHot: airdrop.is_hot || false,
+      isConfirmed: airdrop.is_confirmed || false,
+      participants: airdrop.participants || 0,
+      networks: airdrop.networks || [],
+      createdAt: airdrop.created_at,
+      updatedAt: airdrop.updated_at,
+    }))
 
     return NextResponse.json({
       success: true,
       data: transformedAirdrops,
+      stats,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: result.total,
+        totalPages: result.totalPages,
       },
-      stats,
     })
   } catch (error) {
-    console.error("🔍 API GET ERROR:", error)
+    console.error("API Error:", error)
     return NextResponse.json(
       { success: false, error: "Failed to fetch airdrops", details: error.message },
       { status: 500 },
@@ -87,31 +91,110 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-
-    console.log("🔍 API POST AUDIT - Received body:", {
-      name: body.name,
-      logo: body.logo,
-      logoLength: body.logo?.length,
-      hasLogo: !!body.logo,
-      networks: body.networks,
-    })
-
-    // Handle bulk operations
-    if (body.action && body.ids) {
-      return handleBulkAction(body.action, body.ids, body.updates)
-    }
-
-    // Basic validation
-    if (!body.name || !body.description || !body.action || !body.category || !body.status || !body.difficulty) {
-      console.log("🔍 API POST ERROR - Missing required fields")
+    // Check if database is configured
+    if (!isSupabaseConfigured()) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields: name, description, action, category, status, difficulty" },
-        { status: 400 },
+        {
+          success: false,
+          error: "Database not configured",
+          message: "Please configure Supabase environment variables",
+        },
+        { status: 503 },
       )
     }
 
-    // 🔍 AUDIT: Prepare data for database with explicit logo handling
+    const body = await request.json()
+    console.log("📝 POST Request body:", body)
+
+    // Handle bulk actions
+    if (body.action && body.ids) {
+      const { action, ids } = body
+
+      console.log(`🔄 Performing bulk action: ${action} on ${ids.length} items`)
+
+      switch (action) {
+        case "delete":
+          const deletedItems = await bulkDeleteAirdrops(ids)
+          return NextResponse.json({
+            success: true,
+            message: `Successfully deleted ${deletedItems.length} airdrops`,
+            data: deletedItems,
+          })
+
+        case "activate":
+          const activatedItems = await bulkUpdateAirdrops(ids, { status: "active" })
+          return NextResponse.json({
+            success: true,
+            message: `Successfully activated ${activatedItems.length} airdrops`,
+            data: activatedItems,
+          })
+
+        case "mark-hot":
+          const hotItems = await bulkUpdateAirdrops(ids, { is_hot: true })
+          return NextResponse.json({
+            success: true,
+            message: `Successfully marked ${hotItems.length} airdrops as hot`,
+            data: hotItems,
+          })
+
+        case "confirm":
+          const confirmedItems = await bulkUpdateAirdrops(ids, { is_confirmed: true })
+          return NextResponse.json({
+            success: true,
+            message: `Successfully confirmed ${confirmedItems.length} airdrops`,
+            data: confirmedItems,
+          })
+
+        default:
+          return NextResponse.json({ success: false, error: "Invalid bulk action" }, { status: 400 })
+      }
+    }
+
+    // Handle create airdrop
+    // Validate required fields
+    const requiredFields = ["name", "description", "action", "category", "status", "difficulty"]
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return NextResponse.json({ success: false, error: `${field} is required` }, { status: 400 })
+      }
+    }
+
+    // Prepare social links
+    const socialLinks = {}
+    if (body.website) socialLinks.website = body.website
+    if (body.telegram) socialLinks.telegram = body.telegram
+    if (body.twitter) socialLinks.twitter = body.twitter
+    if (body.discord) socialLinks.discord = body.discord
+    if (body.facebook) socialLinks.facebook = body.facebook
+    if (body.instagram) socialLinks.instagram = body.instagram
+    if (body.youtube) socialLinks.youtube = body.youtube
+    if (body.linkedin) socialLinks.linkedin = body.linkedin
+
+    // Prepare about section
+    const about = {
+      overview: body.overview || "",
+      tokenomics: body.tokenomics || "",
+      roadmap: body.roadmap || "",
+    }
+
+    // Prepare steps array
+    const steps = []
+    for (let i = 1; i <= 6; i++) {
+      const step = body[`step${i}`]
+      if (step && step.trim()) {
+        steps.push(step.trim())
+      }
+    }
+
+    // Prepare requirements array
+    const requirements = []
+    for (let i = 1; i <= 5; i++) {
+      const req = body[`req${i}`]
+      if (req && req.trim()) {
+        requirements.push(req.trim())
+      }
+    }
+
     const airdropData = {
       name: body.name.trim(),
       logo: body.logo || `/placeholder.svg?height=48&width=48&text=${body.name[0]}`,
@@ -119,43 +202,21 @@ export async function POST(request: NextRequest) {
       action: body.action.trim(),
       category: body.category,
       status: body.status,
+      difficulty: body.difficulty,
       reward: body.reward || "TBA",
       startDate: body.startDate || new Date().toISOString().split("T")[0],
-      difficulty: body.difficulty,
-      socialLinks: {
-        website: body.website || "",
-        telegram: body.telegram || "",
-        twitter: body.twitter || "",
-        discord: body.discord || "",
-      },
-      about: {
-        overview: body.overview || "",
-        tokenomics: body.tokenomics || "",
-        roadmap: body.roadmap || "",
-      },
-      steps: [body.step1, body.step2, body.step3, body.step4, body.step5, body.step6].filter(Boolean),
-      requirements: [body.req1, body.req2, body.req3, body.req4, body.req5].filter(Boolean),
+      socialLinks,
+      about,
+      steps,
+      requirements,
       isHot: body.isHot || false,
       isConfirmed: body.isConfirmed || false,
-      networks: body.networks || [], // Include networks
+      networks: body.networks || [],
     }
 
-    console.log("🔍 API POST AUDIT - Prepared airdrop data:", {
-      name: airdropData.name,
-      logo: airdropData.logo,
-      logoIsPlaceholder: airdropData.logo.includes("placeholder.svg"),
-      networks: airdropData.networks,
-    })
+    console.log("🚀 Creating airdrop with data:", airdropData)
 
-    // Create airdrop in database
     const newAirdrop = await createAirdrop(airdropData)
-
-    console.log("🔍 API POST AUDIT - Created airdrop result:", {
-      id: newAirdrop.id,
-      name: newAirdrop.name,
-      logo: newAirdrop.logo,
-      networks: newAirdrop.networks,
-    })
 
     // Transform response
     const transformedAirdrop = {
@@ -165,7 +226,7 @@ export async function POST(request: NextRequest) {
       description: newAirdrop.description,
       action: newAirdrop.action,
       category: newAirdrop.category,
-      rating: Number.parseFloat(newAirdrop.rating || 0),
+      rating: Number.parseFloat(newAirdrop.rating || "0"),
       totalRatings: newAirdrop.total_ratings || 0,
       status: newAirdrop.status,
       reward: newAirdrop.reward,
@@ -177,12 +238,10 @@ export async function POST(request: NextRequest) {
       isHot: newAirdrop.is_hot || false,
       isConfirmed: newAirdrop.is_confirmed || false,
       participants: newAirdrop.participants || 0,
+      networks: newAirdrop.networks || [],
       createdAt: newAirdrop.created_at,
       updatedAt: newAirdrop.updated_at,
-      networks: newAirdrop.networks || [],
     }
-
-    console.log("🔍 API POST AUDIT - Final response logo:", transformedAirdrop.logo)
 
     return NextResponse.json({
       success: true,
@@ -190,54 +249,9 @@ export async function POST(request: NextRequest) {
       message: "Airdrop created successfully",
     })
   } catch (error) {
-    console.error("🔍 API POST ERROR:", error)
+    console.error("API Error:", error)
     return NextResponse.json(
-      { success: false, error: "Failed to create airdrop", details: error.message },
-      { status: 500 },
-    )
-  }
-}
-
-async function handleBulkAction(action: string, ids: string[], updates?: any) {
-  try {
-    let result
-
-    switch (action) {
-      case "delete":
-        result = await bulkDeleteAirdrops(ids)
-        return NextResponse.json({
-          success: true,
-          message: `${result.length} airdrops deleted successfully`,
-        })
-
-      case "mark-hot":
-        result = await bulkUpdateAirdrops(ids, { is_hot: true })
-        return NextResponse.json({
-          success: true,
-          message: `${result.length} airdrops marked as hot`,
-        })
-
-      case "confirm":
-        result = await bulkUpdateAirdrops(ids, { is_confirmed: true })
-        return NextResponse.json({
-          success: true,
-          message: `${result.length} airdrops confirmed`,
-        })
-
-      case "activate":
-        result = await bulkUpdateAirdrops(ids, { status: "active" })
-        return NextResponse.json({
-          success: true,
-          message: `${result.length} airdrops activated`,
-        })
-
-      default:
-        return NextResponse.json({ success: false, error: "Invalid bulk action" }, { status: 400 })
-    }
-  } catch (error) {
-    console.error("🔍 BULK ACTION ERROR:", error)
-    return NextResponse.json(
-      { success: false, error: `Failed to perform bulk ${action}`, details: error.message },
+      { success: false, error: "Failed to process request", details: error.message },
       { status: 500 },
     )
   }

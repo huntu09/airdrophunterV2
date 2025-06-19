@@ -13,11 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LayoutDashboard, Coins, Users, BarChart3, Settings, LogOut, Menu, Bell, Search } from "lucide-react"
+import { LayoutDashboard, Coins, FolderOpen, BarChart3, Settings, LogOut, Menu, Bell, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Suspense } from "react"
 import { Toaster } from "@/components/ui/toaster"
@@ -25,7 +25,7 @@ import { Toaster } from "@/components/ui/toaster"
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Airdrops", href: "/admin/airdrops", icon: Coins },
-  { name: "Users", href: "/admin/users", icon: Users },
+  { name: "Categories", href: "/admin/categories", icon: FolderOpen },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
@@ -37,6 +37,23 @@ export default function AdminLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState("")
+  const [notifications, setNotifications] = useState([])
+
+  const handleSearch = (query: string) => {
+    // Implement search logic
+    console.log("Searching:", query)
+  }
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/auth/logout", { method: "POST" })
+      router.push("/admin/login")
+    } catch (error) {
+      console.error("Logout failed:", error)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f]">
@@ -78,7 +95,9 @@ export default function AdminLayout({
                         ? "bg-[#7cb342] text-white"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2a2a2a]",
                     )}
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={() => {
+                      setSidebarOpen(false)
+                    }}
                   >
                     <item.icon className="h-5 w-5 flex-shrink-0" />
                     <span className="truncate">{item.name}</span>
@@ -125,6 +144,11 @@ export default function AdminLayout({
                 <Input
                   placeholder="Search..."
                   className="pl-10 w-64 bg-gray-50 dark:bg-[#2a2a2a] border-gray-200 dark:border-[#3a3a3a]"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    handleSearch(e.target.value)
+                  }}
                 />
               </div>
             </div>
@@ -133,7 +157,11 @@ export default function AdminLayout({
               {/* Notifications */}
               <Button variant="ghost" size="sm" className="relative">
                 <Bell className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 text-white text-xs">3</Badge>
+                {notifications.length > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 text-white text-xs">
+                    {notifications.length}
+                  </Badge>
+                )}
               </Button>
 
               {/* Profile dropdown */}
@@ -158,9 +186,9 @@ export default function AdminLayout({
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out (Disabled)</span>
+                    <span>Log out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

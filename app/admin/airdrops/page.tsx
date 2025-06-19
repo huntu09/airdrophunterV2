@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -26,7 +28,6 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Plus,
@@ -39,7 +40,6 @@ import {
   Flame,
   TrendingUp,
   RefreshCw,
-  Download,
   CheckCircle,
   AlertCircle,
   Calendar,
@@ -48,11 +48,14 @@ import {
   ImageIcon,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react"
 import { OptimizedImage } from "@/components/optimized-image"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
+import { useMediaQuery } from "@/hooks/use-mobile"
 
 interface Airdrop {
   id: string
@@ -87,6 +90,87 @@ interface Airdrop {
   networks: string[]
 }
 
+interface MobileOptimizedTableProps {
+  airdrops: Airdrop[]
+  onView: (id: string) => void
+  onEdit: (id: string) => void
+  onDelete: (id: string) => void
+}
+
+const MobileOptimizedTable: React.FC<MobileOptimizedTableProps> = ({ airdrops, onView, onEdit, onDelete }) => {
+  return (
+    <div className="grid grid-cols-1 gap-4">
+      {airdrops.map((airdrop) => (
+        <Card key={airdrop.id} className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-[#3a3a3a]">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Avatar className="h-10 w-10 flex-shrink-0">
+                {airdrop.logo ? (
+                  <OptimizedImage
+                    src={airdrop.logo}
+                    alt={airdrop.name}
+                    width={40}
+                    height={40}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <AvatarFallback className="bg-[#7cb342] text-white text-xs">{airdrop.name[0]}</AvatarFallback>
+                )}
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-900 dark:text-white text-sm truncate max-w-[120px]">
+                    {airdrop.name}
+                  </p>
+                  {airdrop.isHot && <Flame className="h-3 w-3 text-orange-500 flex-shrink-0" />}
+                  {airdrop.isConfirmed && <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />}
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[150px]">{airdrop.description}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="font-semibold">Action:</span> {airdrop.action}
+              </div>
+              <div>
+                <span className="font-semibold">Category:</span> {airdrop.category}
+              </div>
+              <div>
+                <span className="font-semibold">Status:</span> {airdrop.status}
+              </div>
+              <div>
+                <span className="font-semibold">Difficulty:</span> {airdrop.difficulty}
+              </div>
+              <div>
+                <span className="font-semibold">Reward:</span> {airdrop.reward}
+              </div>
+              <div>
+                <span className="font-semibold">Networks:</span> {airdrop.networks?.join(", ") || "None"}
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-4 gap-2">
+              <Button size="sm" variant="ghost" onClick={() => onView(airdrop.id)}>
+                <Eye className="h-3 w-3 mr-1" />
+                View
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => onEdit(airdrop.id)}>
+                <Edit className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => onDelete(airdrop.id)}>
+                <Trash2 className="h-3 w-3 mr-1" />
+                Delete
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
 export default function AirdropsManagement() {
   const [airdrops, setAirdrops] = useState<Airdrop[]>([])
   const [loading, setLoading] = useState(true)
@@ -104,11 +188,11 @@ export default function AirdropsManagement() {
     hottest: 0,
     potential: 0,
   })
-  const [alert, setAlert] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const { toast } = useToast()
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -169,6 +253,9 @@ export default function AirdropsManagement() {
     networks: [] as string[],
   })
 
+  const router = useRouter()
+  const isMobile = useMediaQuery("(max-width: 768px)")
+
   // Fetch airdrops
   const fetchAirdrops = async () => {
     try {
@@ -181,6 +268,8 @@ export default function AirdropsManagement() {
         limit: itemsPerPage.toString(),
       })
 
+      console.log("🔄 Fetching airdrops with params:", Object.fromEntries(params))
+
       const response = await fetch(`/api/admin/airdrops?${params}`)
 
       if (!response.ok) {
@@ -188,17 +277,28 @@ export default function AirdropsManagement() {
       }
 
       const data = await response.json()
+      console.log("📊 Fetch response:", data)
 
       if (data.success) {
         setAirdrops(data.data)
         setStats(data.stats)
         setTotalItems(data.pagination.total)
+        console.log("✅ Data loaded successfully:", data.data.length, "items")
       } else {
-        showAlert("error", data.error || "Failed to fetch airdrops")
+        console.error("❌ API Error:", data.error)
+        toast({
+          title: "Error",
+          description: data.error || "Failed to fetch airdrops",
+          variant: "destructive",
+        })
       }
     } catch (error) {
-      console.error("Fetch error:", error)
-      showAlert("error", `Network error: ${error.message}`)
+      console.error("💥 Fetch error:", error)
+      toast({
+        title: "Network Error",
+        description: `Failed to fetch data: ${error.message}`,
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -207,14 +307,6 @@ export default function AirdropsManagement() {
   useEffect(() => {
     fetchAirdrops()
   }, [searchTerm, filterCategory, filterStatus, currentPage, itemsPerPage])
-
-  const showAlert = (type: "success" | "error", message: string) => {
-    toast({
-      title: type === "success" ? "Success" : "Error",
-      description: message,
-      variant: type === "error" ? "destructive" : "default",
-    })
-  }
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -232,14 +324,20 @@ export default function AirdropsManagement() {
     }
   }
 
+  // Fixed bulk action handler
   const handleBulkAction = async (action: string) => {
     if (selectedAirdrops.length === 0) {
-      showAlert("error", "Please select airdrops first")
+      toast({
+        title: "No Selection",
+        description: "Please select airdrops first",
+        variant: "destructive",
+      })
       return
     }
 
     try {
-      setLoading(true)
+      setActionLoading(true)
+      console.log(`🔄 Performing bulk action: ${action} on items:`, selectedAirdrops)
 
       const response = await fetch("/api/admin/airdrops", {
         method: "POST",
@@ -253,19 +351,58 @@ export default function AirdropsManagement() {
       })
 
       const data = await response.json()
+      console.log("📊 Bulk action response:", data)
 
       if (data.success) {
-        showAlert("success", data.message)
+        toast({
+          title: "Success",
+          description: data.message,
+        })
         setSelectedAirdrops([])
-        fetchAirdrops()
+        await fetchAirdrops() // Refresh data
       } else {
-        showAlert("error", data.error || `Failed to ${action} airdrops`)
+        console.error("❌ Bulk action failed:", data.error)
+        toast({
+          title: "Error",
+          description: data.error || `Failed to ${action} airdrops`,
+          variant: "destructive",
+        })
       }
     } catch (error) {
-      console.error("Bulk action error:", error)
-      showAlert("error", `Failed to ${action} airdrops`)
+      console.error("💥 Bulk action error:", error)
+      toast({
+        title: "Network Error",
+        description: `Failed to ${action} airdrops: ${error.message}`,
+        variant: "destructive",
+      })
     } finally {
-      setLoading(false)
+      setActionLoading(false)
+    }
+  }
+
+  // Fixed delete handler
+  const handleDelete = async (id: string) => {
+    console.log("🗑️ Delete requested for ID:", id)
+    setItemToDelete(id)
+    setSelectedAirdrops([id])
+    setDeleteConfirmOpen(true)
+  }
+
+  // Confirm delete handler
+  const confirmDelete = async () => {
+    if (!itemToDelete) return
+
+    try {
+      setActionLoading(true)
+      console.log("🗑️ Confirming delete for:", itemToDelete)
+
+      await handleBulkAction("delete")
+      setDeleteConfirmOpen(false)
+      setItemToDelete(null)
+    } catch (error) {
+      console.error("💥 Delete confirmation error:", error)
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -323,88 +460,52 @@ export default function AirdropsManagement() {
         !formData.status ||
         !formData.difficulty
       ) {
-        showAlert(
-          "error",
-          "Please fill in all required fields (Name, Description, Action, Category, Status, Difficulty)",
-        )
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields (Name, Description, Action, Category, Status, Difficulty)",
+          variant: "destructive",
+        })
         return
       }
 
-      // Prepare data for API
-      const airdropData = {
-        // Basic fields
-        name: formData.name.trim(),
-        logo: formData.logo || logoPreview || `/placeholder.svg?height=48&width=48&text=${formData.name[0]}`,
-        description: formData.description.trim(),
-        action: formData.action.trim(),
-        category: formData.category,
-        status: formData.status,
-        difficulty: formData.difficulty,
-        reward: formData.reward || "TBA",
-        startDate: formData.startDate || new Date().toISOString().split("T")[0],
-        networks: formData.networks,
-
-        // Social links - Extended
-        website: formData.website.trim(),
-        telegram: formData.telegram.trim(),
-        twitter: formData.twitter.trim(),
-        discord: formData.discord.trim(),
-        facebook: formData.facebook.trim(),
-        instagram: formData.instagram.trim(),
-        youtube: formData.youtube.trim(),
-        linkedin: formData.linkedin.trim(),
-
-        // About project
-        overview: formData.overview.trim(),
-        tokenomics: formData.tokenomics.trim(),
-        roadmap: formData.roadmap.trim(),
-
-        // Steps
-        step1: formData.step1.trim(),
-        step2: formData.step2.trim(),
-        step3: formData.step3.trim(),
-        step4: formData.step4.trim(),
-        step5: formData.step5.trim(),
-        step6: formData.step6.trim(),
-
-        // Requirements
-        req1: formData.req1.trim(),
-        req2: formData.req2.trim(),
-        req3: formData.req3.trim(),
-        req4: formData.req4.trim(),
-        req5: formData.req5.trim(),
-
-        // Flags
-        isHot: formData.isHot,
-        isConfirmed: formData.isConfirmed,
-      }
-
-      console.log("🚀 Creating airdrop with data:", airdropData)
+      console.log("📝 Creating airdrop with form data:", formData)
 
       const response = await fetch("/api/admin/airdrops", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(airdropData),
+        body: JSON.stringify(formData),
       })
 
       const data = await response.json()
+      console.log("📊 Create response:", data)
 
       if (data.success) {
-        showAlert("success", "Airdrop created successfully!")
+        toast({
+          title: "Success",
+          description: "Airdrop created successfully!",
+        })
         setIsAddDialogOpen(false)
         resetForm()
-        fetchAirdrops()
+        await fetchAirdrops()
       } else {
         if (data.details) {
           setValidationErrors(data.details)
         }
-        showAlert("error", data.error || "Failed to create airdrop")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to create airdrop",
+          variant: "destructive",
+        })
       }
     } catch (error) {
-      console.error("❌ Create error:", error)
-      showAlert("error", `Network error: ${error.message}`)
+      console.error("💥 Create error:", error)
+      toast({
+        title: "Network Error",
+        description: `Failed to create airdrop: ${error.message}`,
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -464,36 +565,38 @@ export default function AirdropsManagement() {
       const formDataUpload = new FormData()
       formDataUpload.append("file", file)
 
-      console.log("📡 Uploading to /api/admin/upload...")
-
       const response = await fetch("/api/admin/upload", {
         method: "POST",
         body: formDataUpload,
       })
 
-      console.log("📡 Upload response status:", response.status)
-
       const data = await response.json()
-      console.log("📊 Upload response data:", data)
+      console.log("📊 Upload response:", data)
 
       if (data.success) {
         const uploadedUrl = data.data.url
-        console.log("✅ Logo uploaded successfully:", uploadedUrl)
-
-        // Update form data with uploaded URL
         setFormData((prev) => ({ ...prev, logo: uploadedUrl }))
         setLogoPreview(uploadedUrl)
-
-        showAlert("success", "Logo uploaded successfully!")
+        toast({
+          title: "Success",
+          description: "Logo uploaded successfully!",
+        })
       } else {
         console.error("❌ Upload failed:", data.error)
-        showAlert("error", data.error || "Failed to upload logo")
-        // Keep preview but clear form logo
+        toast({
+          title: "Upload Error",
+          description: data.error || "Failed to upload logo",
+          variant: "destructive",
+        })
         setFormData((prev) => ({ ...prev, logo: "" }))
       }
     } catch (error) {
-      console.error("❌ Upload error:", error)
-      showAlert("error", "Failed to upload logo")
+      console.error("💥 Upload error:", error)
+      toast({
+        title: "Upload Error",
+        description: "Failed to upload logo",
+        variant: "destructive",
+      })
       setFormData((prev) => ({ ...prev, logo: "" }))
     } finally {
       setUploadingLogo(false)
@@ -521,20 +624,6 @@ export default function AirdropsManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Alert */}
-      {alert && (
-        <Alert className={alert.type === "success" ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
-          {alert.type === "success" ? (
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          ) : (
-            <AlertCircle className="h-4 w-4 text-red-600" />
-          )}
-          <AlertDescription className={alert.type === "success" ? "text-green-800" : "text-red-800"}>
-            {alert.message}
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* Header */}
       <div className="flex flex-col gap-4 mb-6">
         <div>
@@ -578,9 +667,42 @@ export default function AirdropsManagement() {
         </div>
       </div>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              Confirm Delete
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this airdrop? This action cannot be undone and will permanently remove the
+              airdrop from the database.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} disabled={actionLoading}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={actionLoading}>
+              {actionLoading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Complete Add Airdrop Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        {/* Mobile-optimized dialog */}
         <DialogContent className="sm:max-w-[900px] max-h-[95vh] w-[95vw] sm:w-full overflow-y-auto">
           <DialogHeader className="pb-4">
             <DialogTitle className="text-xl sm:text-2xl">Add New Airdrop</DialogTitle>
@@ -600,7 +722,6 @@ export default function AirdropsManagement() {
 
             {/* Basic Information Tab */}
             <TabsContent value="basic" className="space-y-4">
-              {/* Mobile-optimized form inputs */}
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-base font-medium">
@@ -611,10 +732,7 @@ export default function AirdropsManagement() {
                     placeholder="e.g., Lendasat"
                     value={formData.name}
                     onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                    className={cn(
-                      "h-12 text-base", // Larger height and text for mobile
-                      validationErrors.name ? "border-red-500" : "",
-                    )}
+                    className={cn("h-12 text-base", validationErrors.name ? "border-red-500" : "")}
                   />
                   {validationErrors.name && <p className="text-sm text-red-500">{validationErrors.name}</p>}
                 </div>
@@ -627,10 +745,7 @@ export default function AirdropsManagement() {
                     placeholder="e.g., Borrow or lend, Bridge and interact"
                     value={formData.action}
                     onChange={(e) => setFormData((prev) => ({ ...prev, action: e.target.value }))}
-                    className={cn(
-                      "h-12 text-base", // Larger height and text for mobile
-                      validationErrors.action ? "border-red-500" : "",
-                    )}
+                    className={cn("h-12 text-base", validationErrors.action ? "border-red-500" : "")}
                   />
                   {validationErrors.action && <p className="text-sm text-red-500">{validationErrors.action}</p>}
                 </div>
@@ -654,7 +769,6 @@ export default function AirdropsManagement() {
                 <Label>Logo Upload</Label>
                 <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
                   <div className="flex flex-col items-center justify-center space-y-4">
-                    {/* Logo Preview */}
                     {logoPreview ? (
                       <div className="relative">
                         <img
@@ -672,7 +786,7 @@ export default function AirdropsManagement() {
                             setFormData((prev) => ({ ...prev, logo: "" }))
                           }}
                         >
-                          ×
+                          <X className="h-3 w-3" />
                         </Button>
                       </div>
                     ) : (
@@ -681,7 +795,6 @@ export default function AirdropsManagement() {
                       </div>
                     )}
 
-                    {/* Upload Button */}
                     <div className="text-center">
                       <Button
                         type="button"
@@ -705,7 +818,6 @@ export default function AirdropsManagement() {
                       <p className="text-sm text-gray-500">PNG, JPG, GIF up to 5MB</p>
                     </div>
 
-                    {/* Hidden File Input */}
                     <input
                       id="logo-upload"
                       type="file"
@@ -719,7 +831,6 @@ export default function AirdropsManagement() {
                       }}
                     />
 
-                    {/* Current Logo URL Display */}
                     {formData.logo && (
                       <div className="w-full">
                         <Label className="text-xs text-gray-500">Logo URL:</Label>
@@ -1005,35 +1116,6 @@ export default function AirdropsManagement() {
             </TabsContent>
           </Tabs>
 
-          {/* Delete Confirmation Dialog */}
-          <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Confirm Delete</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete this airdrop? This action cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (itemToDelete) {
-                      handleBulkAction("delete")
-                      setDeleteConfirmOpen(false)
-                      setItemToDelete(null)
-                    }
-                  }}
-                >
-                  Delete
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
           <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
               Cancel
@@ -1159,54 +1241,50 @@ export default function AirdropsManagement() {
                 </span>
               </div>
 
-              {/* Mobile: Stack buttons vertically */}
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex gap-2 flex-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction("activate")}
-                    className="flex-1 sm:flex-none text-xs"
-                  >
-                    Activate
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction("mark-hot")}
-                    className="flex-1 sm:flex-none text-xs"
-                  >
-                    🔥 Hot
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction("confirm")}
-                    className="flex-1 sm:flex-none text-xs"
-                  >
-                    ✅ Confirm
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction("export")}
-                    className="flex-1 sm:flex-none text-xs"
-                  >
-                    <Download className="h-3 w-3 mr-1" />
-                    Export
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-red-600 border-red-200 hover:bg-red-50 flex-1 sm:flex-none text-xs"
-                    onClick={() => handleBulkAction("delete")}
-                  >
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleBulkAction("activate")}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> : null}
+                  Activate
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleBulkAction("mark-hot")}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> : null}
+                  Mark Hot
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleBulkAction("confirm")}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> : null}
+                  Confirm
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setDeleteConfirmOpen(true)
+                  }}
+                  disabled={actionLoading}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  {actionLoading ? (
+                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
                     <Trash2 className="h-3 w-3 mr-1" />
-                    Delete
-                  </Button>
-                </div>
+                  )}
+                  Delete
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -1250,206 +1328,204 @@ export default function AirdropsManagement() {
             </div>
           ) : (
             <>
-              {/* Better mobile table with horizontal scroll */}
-              <div className="overflow-x-auto -mx-4 sm:mx-0 relative">
-                <div className="inline-block min-w-full align-middle">
-                  {/* Scroll indicator */}
-                  <div className="sm:hidden absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-[#1a1a1a] to-transparent pointer-events-none z-10"></div>
+              {isMobile ? (
+                <MobileOptimizedTable
+                  airdrops={airdrops}
+                  onView={(id) => window.open(`/airdrop/${id}`, "_blank")}
+                  onEdit={(id) => window.open(`/admin/airdrops/${id}`, "_blank")}
+                  onDelete={handleDelete}
+                />
+              ) : (
+                <div className="overflow-x-auto -mx-4 sm:mx-0 relative">
+                  <div className="inline-block min-w-full align-middle">
+                    <div className="sm:hidden absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-[#1a1a1a] to-transparent pointer-events-none z-10"></div>
 
-                  <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-                    <Table className="min-w-[800px] sm:min-w-full">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12 sticky left-0 bg-white dark:bg-[#1a1a1a] z-10">
-                            <Checkbox
-                              checked={selectedAirdrops.length === airdrops.length && airdrops.length > 0}
-                              onCheckedChange={handleSelectAll}
-                            />
-                          </TableHead>
-                          <TableHead className="min-w-[200px] sticky left-12 bg-white dark:bg-[#1a1a1a] z-10">
-                            Project
-                          </TableHead>
-                          <TableHead className="min-w-[150px]">Action</TableHead>
-                          <TableHead className="min-w-[100px]">Category</TableHead>
-                          <TableHead className="min-w-[100px]">Status</TableHead>
-                          <TableHead className="min-w-[100px]">Difficulty</TableHead>
-                          <TableHead className="min-w-[100px]">Rating</TableHead>
-                          <TableHead className="min-w-[120px]">Reward</TableHead>
-                          <TableHead className="min-w-[120px]">Networks</TableHead>
-                          <TableHead className="min-w-[120px]">Social Links</TableHead>
-                          <TableHead className="min-w-[100px]">Created</TableHead>
-                          <TableHead className="w-12">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {airdrops.map((airdrop) => (
-                          <TableRow key={airdrop.id}>
-                            <TableCell className="sticky left-0 bg-white dark:bg-[#1a1a1a] z-10">
+                    <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                      <Table className="min-w-[800px] sm:min-w-full">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12 sticky left-0 bg-white dark:bg-[#1a1a1a] z-10">
                               <Checkbox
-                                checked={selectedAirdrops.includes(airdrop.id)}
-                                onCheckedChange={(checked) => handleSelectAirdrop(airdrop.id, checked as boolean)}
+                                checked={selectedAirdrops.length === airdrops.length && airdrops.length > 0}
+                                onCheckedChange={handleSelectAll}
                               />
-                            </TableCell>
-                            <TableCell className="sticky left-12 bg-white dark:bg-[#1a1a1a] z-10">
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
-                                  {airdrop.logo ? (
-                                    <OptimizedImage
-                                      src={airdrop.logo}
-                                      alt={airdrop.name}
-                                      width={40}
-                                      height={40}
-                                      className="rounded-full"
-                                    />
-                                  ) : (
-                                    <AvatarFallback className="bg-[#7cb342] text-white text-xs">
-                                      {airdrop.name[0]}
-                                    </AvatarFallback>
-                                  )}
-                                </Avatar>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate max-w-[120px]">
-                                      {airdrop.name}
-                                    </p>
-                                    {airdrop.isHot && <Flame className="h-3 w-3 text-orange-500 flex-shrink-0" />}
-                                    {airdrop.isConfirmed && (
-                                      <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[150px]">
-                                    {airdrop.description}
-                                  </p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Zap className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                                <span className="text-sm truncate max-w-[120px]" title={airdrop.action}>
-                                  {airdrop.action}
-                                </span>
-                              </div>
-                            </TableCell>
-                            {/* Rest of the table cells remain the same but with better truncation */}
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {getCategoryIcon(airdrop.category)}
-                                <span className="capitalize text-sm">{airdrop.category}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getStatusColor(airdrop.status)} variant="secondary">
-                                {airdrop.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getDifficultyColor(airdrop.difficulty)} variant="secondary">
-                                {airdrop.difficulty}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                <span className="text-sm">{airdrop.rating}</span>
-                                <span className="text-xs text-gray-500">({airdrop.totalRatings})</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span
-                                className="font-medium text-[#7cb342] text-sm truncate max-w-[100px]"
-                                title={airdrop.reward}
-                              >
-                                {airdrop.reward}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {airdrop.networks?.slice(0, 2).map((network, i) => (
-                                  <Badge key={i} variant="outline" className="text-xs">
-                                    {network.slice(0, 3)}
-                                  </Badge>
-                                ))}
-                                {airdrop.networks && airdrop.networks.length > 2 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{airdrop.networks.length - 2}
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                {airdrop.socialLinks?.website && (
-                                  <Badge variant="outline" className="text-xs">
-                                    Web
-                                  </Badge>
-                                )}
-                                {airdrop.socialLinks?.twitter && (
-                                  <Badge variant="outline" className="text-xs">
-                                    X
-                                  </Badge>
-                                )}
-                                {airdrop.socialLinks?.telegram && (
-                                  <Badge variant="outline" className="text-xs">
-                                    TG
-                                  </Badge>
-                                )}
-                                {airdrop.socialLinks?.discord && (
-                                  <Badge variant="outline" className="text-xs">
-                                    DC
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-xs text-gray-600 dark:text-gray-400">
-                                {new Date(airdrop.createdAt).toLocaleDateString()}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem onClick={() => window.open(`/airdrop/${airdrop.id}`, "_blank")}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    View
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => window.open(`/admin/airdrops/${airdrop.id}`, "_blank")}
-                                  >
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    className="text-red-600"
-                                    onClick={() => {
-                                      setItemToDelete(airdrop.id)
-                                      setSelectedAirdrops([airdrop.id])
-                                      setDeleteConfirmOpen(true)
-                                    }}
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
+                            </TableHead>
+                            <TableHead className="min-w-[200px] sticky left-12 bg-white dark:bg-[#1a1a1a] z-10">
+                              Project
+                            </TableHead>
+                            <TableHead className="min-w-[150px]">Action</TableHead>
+                            <TableHead className="min-w-[100px]">Category</TableHead>
+                            <TableHead className="min-w-[100px]">Status</TableHead>
+                            <TableHead className="min-w-[100px]">Difficulty</TableHead>
+                            <TableHead className="min-w-[100px]">Rating</TableHead>
+                            <TableHead className="min-w-[120px]">Reward</TableHead>
+                            <TableHead className="min-w-[120px]">Networks</TableHead>
+                            <TableHead className="min-w-[120px]">Social Links</TableHead>
+                            <TableHead className="min-w-[100px]">Created</TableHead>
+                            <TableHead className="w-12">Actions</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {airdrops.map((airdrop) => (
+                            <TableRow key={airdrop.id}>
+                              <TableCell className="sticky left-0 bg-white dark:bg-[#1a1a1a] z-10">
+                                <Checkbox
+                                  checked={selectedAirdrops.includes(airdrop.id)}
+                                  onCheckedChange={(checked) => handleSelectAirdrop(airdrop.id, checked as boolean)}
+                                />
+                              </TableCell>
+                              <TableCell className="sticky left-12 bg-white dark:bg-[#1a1a1a] z-10">
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
+                                    {airdrop.logo ? (
+                                      <OptimizedImage
+                                        src={airdrop.logo}
+                                        alt={airdrop.name}
+                                        width={40}
+                                        height={40}
+                                        className="rounded-full"
+                                      />
+                                    ) : (
+                                      <AvatarFallback className="bg-[#7cb342] text-white text-xs">
+                                        {airdrop.name[0]}
+                                      </AvatarFallback>
+                                    )}
+                                  </Avatar>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium text-gray-900 dark:text-white text-sm truncate max-w-[120px]">
+                                        {airdrop.name}
+                                      </p>
+                                      {airdrop.isHot && <Flame className="h-3 w-3 text-orange-500 flex-shrink-0" />}
+                                      {airdrop.isConfirmed && (
+                                        <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[150px]">
+                                      {airdrop.description}
+                                    </p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Zap className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                  <span className="text-sm truncate max-w-[120px]" title={airdrop.action}>
+                                    {airdrop.action}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getCategoryIcon(airdrop.category)}
+                                  <span className="capitalize text-sm">{airdrop.category}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getStatusColor(airdrop.status)} variant="secondary">
+                                  {airdrop.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getDifficultyColor(airdrop.difficulty)} variant="secondary">
+                                  {airdrop.difficulty}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                  <span className="text-sm">{airdrop.rating}</span>
+                                  <span className="text-xs text-gray-500">({airdrop.totalRatings})</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span
+                                  className="font-medium text-[#7cb342] text-sm truncate max-w-[100px]"
+                                  title={airdrop.reward}
+                                >
+                                  {airdrop.reward}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {airdrop.networks?.slice(0, 2).map((network, i) => (
+                                    <Badge key={i} variant="outline" className="text-xs">
+                                      {network.slice(0, 3)}
+                                    </Badge>
+                                  ))}
+                                  {airdrop.networks && airdrop.networks.length > 2 && (
+                                    <Badge variant="outline" className="text-xs">
+                                      +{airdrop.networks.length - 2}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  {airdrop.socialLinks?.website && (
+                                    <Badge variant="outline" className="text-xs">
+                                      Web
+                                    </Badge>
+                                  )}
+                                  {airdrop.socialLinks?.twitter && (
+                                    <Badge variant="outline" className="text-xs">
+                                      X
+                                    </Badge>
+                                  )}
+                                  {airdrop.socialLinks?.telegram && (
+                                    <Badge variant="outline" className="text-xs">
+                                      TG
+                                    </Badge>
+                                  )}
+                                  {airdrop.socialLinks?.discord && (
+                                    <Badge variant="outline" className="text-xs">
+                                      DC
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  {new Date(airdrop.createdAt).toLocaleDateString()}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => window.open(`/airdrop/${airdrop.id}`, "_blank")}>
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      View
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => window.open(`/admin/airdrops/${airdrop.id}`, "_blank")}
+                                    >
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(airdrop.id)}>
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Simple Pagination */}
-              {/* Mobile-Optimized Pagination */}
+              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4">
                   <div className="text-sm text-gray-600 dark:text-gray-400 order-2 sm:order-1">
@@ -1468,7 +1544,6 @@ export default function AirdropsManagement() {
                       <span className="hidden sm:inline ml-1">Previous</span>
                     </Button>
 
-                    {/* Mobile: Show fewer page numbers */}
                     <div className="hidden sm:flex gap-1">
                       {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                         const page = i + 1
@@ -1486,7 +1561,6 @@ export default function AirdropsManagement() {
                       })}
                     </div>
 
-                    {/* Mobile: Show current page info */}
                     <div className="sm:hidden flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm">
                       {currentPage} / {totalPages}
                     </div>

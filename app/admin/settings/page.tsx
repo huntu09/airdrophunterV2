@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,10 +10,31 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Settings, Globe, Bell, Shield, Database, Mail, Palette, Save, RefreshCw, CheckCircle } from "lucide-react"
+import {
+  Settings,
+  Globe,
+  Bell,
+  Shield,
+  Database,
+  Mail,
+  Palette,
+  Save,
+  RefreshCw,
+  CheckCircle,
+  UploadIcon,
+  Upload,
+  Download,
+  Key,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+} from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function AdminSettings() {
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
   const [settings, setSettings] = useState({
     siteName: "AirdropHunter",
     siteDescription: "Your ultimate crypto co-pilot for discovering profitable airdrops",
@@ -29,10 +50,169 @@ export default function AdminSettings() {
     themeColor: "#7cb342",
   })
 
+  const [envVars, setEnvVars] = useState<Record<string, any>>({})
+  const [showSensitive, setShowSensitive] = useState<Record<string, boolean>>({})
+  const [backupLoading, setBackupLoading] = useState(false)
+  const [restoreLoading, setRestoreLoading] = useState(false)
+  const [envLoading, setEnvLoading] = useState(false)
+
+  // Load settings from API
+  const loadSettings = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/settings")
+      const result = await response.json()
+      if (result.success) {
+        setSettings(result.data)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load settings",
+        variant: "destructive",
+      })
+    }
+  }, [])
+
+  // Load environment variables
+  const loadEnvVars = useCallback(async () => {
+    try {
+      setEnvLoading(true)
+      const response = await fetch("/api/admin/env")
+      const result = await response.json()
+      if (result.success) {
+        setEnvVars(result.data)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load environment variables",
+        variant: "destructive",
+      })
+    } finally {
+      setEnvLoading(false)
+    }
+  }, [])
+
+  // Create backup
+  const createBackup = async () => {
+    try {
+      setBackupLoading(true)
+      const response = await fetch("/api/admin/backup")
+      const result = await response.json()
+
+      if (result.success) {
+        // Download backup file
+        const dataStr = JSON.stringify(result.data, null, 2)
+        const dataBlob = new Blob([dataStr], { type: "application/json" })
+        const url = URL.createObjectURL(dataBlob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `airdrophunter-backup-${new Date().toISOString().split("T")[0]}.json`
+        link.click()
+        URL.revokeObjectURL(url)
+
+        toast({
+          title: "Backup created!",
+          description: "Backup file has been downloaded",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Backup failed",
+        description: "Failed to create backup",
+        variant: "destructive",
+      })
+    } finally {
+      setBackupLoading(false)
+    }
+  }
+
+  // Restore backup
+  const restoreBackup = async (file: File) => {
+    try {
+      setRestoreLoading(true)
+      const fileContent = await file.text()
+      const backupData = JSON.parse(fileContent)
+
+      const response = await fetch("/api/admin/backup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ backupData }),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        toast({
+          title: "Backup restored!",
+          description: "Data has been restored successfully",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Restore failed",
+        description: "Failed to restore backup",
+        variant: "destructive",
+      })
+    } finally {
+      setRestoreLoading(false)
+    }
+  }
+
+  // Update environment variable
+  const updateEnvVar = async (key: string, value: string) => {
+    try {
+      const response = await fetch("/api/admin/env", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, value, action: "update" }),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        toast({
+          title: "Environment variable updated!",
+          description: result.message,
+        })
+        loadEnvVars()
+      }
+    } catch (error) {
+      toast({
+        title: "Update failed",
+        description: "Failed to update environment variable",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleSave = async () => {
-    // Mock save - replace with real API call
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    try {
+      setLoading(true)
+      const response = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        setSaved(true)
+        toast({
+          title: "Settings saved!",
+          description: "Your settings have been updated successfully.",
+        })
+        setTimeout(() => setSaved(false), 3000)
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save settings",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSettingChange = (key: string, value: any) => {
@@ -42,17 +222,54 @@ export default function AdminSettings() {
     }))
   }
 
+  const handleFileUpload = async (file: File, type: string) => {
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("type", type)
+
+      // Simulate upload
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      toast({
+        title: "File uploaded!",
+        description: `${type} has been uploaded successfully.`,
+      })
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload file. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  useEffect(() => {
+    loadSettings()
+    loadEnvVars()
+  }, [loadSettings, loadEnvVars])
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
           <p className="text-gray-600 dark:text-gray-400">Manage your application settings and preferences</p>
         </div>
-        <Button onClick={handleSave} className="bg-[#7cb342] hover:bg-[#689f38] text-white">
-          {saved ? <CheckCircle className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-          {saved ? "Saved!" : "Save Changes"}
+        <Button
+          onClick={handleSave}
+          disabled={loading}
+          className="bg-[#7cb342] hover:bg-[#689f38] text-white w-full sm:w-auto"
+        >
+          {loading ? (
+            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+          ) : saved ? (
+            <CheckCircle className="h-4 w-4 mr-2" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          {loading ? "Saving..." : saved ? "Saved!" : "Save Changes"}
         </Button>
       </div>
 
@@ -66,29 +283,33 @@ export default function AdminSettings() {
       )}
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-gray-100 dark:bg-[#2a2a2a]">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 bg-gray-100 dark:bg-[#2a2a2a]">
           <TabsTrigger value="general" className="data-[state=active]:bg-[#7cb342] data-[state=active]:text-white">
             <Globe className="h-4 w-4 mr-2" />
-            General
+            <span className="hidden sm:inline">General</span>
           </TabsTrigger>
           <TabsTrigger
             value="notifications"
             className="data-[state=active]:bg-[#7cb342] data-[state=active]:text-white"
           >
             <Bell className="h-4 w-4 mr-2" />
-            Notifications
+            <span className="hidden sm:inline">Notifications</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="data-[state=active]:bg-[#7cb342] data-[state=active]:text-white">
             <Shield className="h-4 w-4 mr-2" />
-            Security
+            <span className="hidden sm:inline">Security</span>
           </TabsTrigger>
           <TabsTrigger value="database" className="data-[state=active]:bg-[#7cb342] data-[state=active]:text-white">
             <Database className="h-4 w-4 mr-2" />
-            Database
+            <span className="hidden sm:inline">Database</span>
           </TabsTrigger>
           <TabsTrigger value="appearance" className="data-[state=active]:bg-[#7cb342] data-[state=active]:text-white">
             <Palette className="h-4 w-4 mr-2" />
-            Appearance
+            <span className="hidden sm:inline">Appearance</span>
+          </TabsTrigger>
+          <TabsTrigger value="environment" className="data-[state=active]:bg-[#7cb342] data-[state=active]:text-white">
+            <Key className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Environment</span>
           </TabsTrigger>
         </TabsList>
 
@@ -143,6 +364,59 @@ export default function AdminSettings() {
                   onChange={(e) => handleSettingChange("adminEmail", e.target.value)}
                   className="bg-gray-50 dark:bg-[#2a2a2a]"
                 />
+              </div>
+
+              {/* File Upload Section */}
+              <div className="space-y-4">
+                <Label>Site Assets</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Site Logo</Label>
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => document.getElementById("logo-upload")?.click()}
+                        className="w-full"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Logo
+                      </Button>
+                      <input
+                        id="logo-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleFileUpload(file, "logo")
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Favicon</Label>
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => document.getElementById("favicon-upload")?.click()}
+                        className="w-full"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Favicon
+                      </Button>
+                      <input
+                        id="favicon-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleFileUpload(file, "favicon")
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -313,10 +587,47 @@ export default function AdminSettings() {
               </div>
 
               <div className="space-y-4">
-                <Button variant="outline" className="w-full">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Create Backup
+                <Button variant="outline" className="w-full" onClick={createBackup} disabled={backupLoading}>
+                  {backupLoading ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  {backupLoading ? "Creating Backup..." : "Create & Download Backup"}
                 </Button>
+
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => document.getElementById("restore-upload")?.click()}
+                    disabled={restoreLoading}
+                  >
+                    {restoreLoading ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <UploadIcon className="h-4 w-4 mr-2" />
+                    )}
+                    {restoreLoading ? "Restoring..." : "Restore from Backup"}
+                  </Button>
+                  <input
+                    id="restore-upload"
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        if (
+                          confirm("Are you sure you want to restore from backup? This will overwrite existing data.")
+                        ) {
+                          restoreBackup(file)
+                        }
+                      }
+                    }}
+                  />
+                </div>
+
                 <Button variant="outline" className="w-full">
                   <Database className="h-4 w-4 mr-2" />
                   Optimize Database
@@ -357,6 +668,13 @@ export default function AdminSettings() {
                       placeholder="#7cb342"
                     />
                   </div>
+                  {/* Live Preview */}
+                  <div className="mt-4 p-4 border rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Preview:</p>
+                    <Button style={{ backgroundColor: settings.themeColor }} className="text-white">
+                      Sample Button
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -366,13 +684,96 @@ export default function AdminSettings() {
                       <button
                         key={color}
                         onClick={() => handleSettingChange("themeColor", color)}
-                        className="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600"
+                        className="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600 hover:scale-110 transition-transform"
                         style={{ backgroundColor: color }}
                       />
                     ))}
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        {/* Environment Variables Settings */}
+        <TabsContent value="environment">
+          <Card className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-[#3a3a3a]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5 text-[#7cb342]" />
+                Environment Variables
+              </CardTitle>
+              <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-800 dark:text-yellow-400">
+                  Changes to environment variables require application restart to take effect.
+                </AlertDescription>
+              </Alert>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {envLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
+                      <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                Object.entries(envVars).map(([key, config]) => (
+                  <div key={key} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor={key} className="flex items-center gap-2">
+                        {key}
+                        {config.isSensitive && (
+                          <Badge variant="secondary" className="text-xs">
+                            Sensitive
+                          </Badge>
+                        )}
+                        {!config.isSet && (
+                          <Badge variant="destructive" className="text-xs">
+                            Not Set
+                          </Badge>
+                        )}
+                      </Label>
+                      {config.isSensitive && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setShowSensitive((prev) => ({
+                              ...prev,
+                              [key]: !prev[key],
+                            }))
+                          }
+                        >
+                          {showSensitive[key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      )}
+                    </div>
+                    <Input
+                      id={key}
+                      type={config.isSensitive && !showSensitive[key] ? "password" : "text"}
+                      value={config.value || ""}
+                      onChange={(e) => {
+                        const newValue = e.target.value
+                        setEnvVars((prev) => ({
+                          ...prev,
+                          [key]: { ...prev[key], value: newValue },
+                        }))
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value !== config.value) {
+                          updateEnvVar(key, e.target.value)
+                        }
+                      }}
+                      className="bg-gray-50 dark:bg-[#2a2a2a]"
+                      placeholder={config.description}
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{config.description}</p>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
